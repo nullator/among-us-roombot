@@ -3,6 +3,7 @@ package repository
 import (
 	"among-us-roombot/internals/models"
 	"among-us-roombot/pkg/base"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 )
@@ -14,7 +15,7 @@ type Repository struct {
 type RepositoryInterface interface {
 	SaveUserStatus(int64, string) error
 	GetUserStatus(int64) (string, error)
-	GetRoomList() ([]string, error)
+	GetRoomList() ([]models.Room, error)
 	AddRoom(*models.Room) error
 	DeleteRoom(string) error
 }
@@ -45,14 +46,34 @@ func (r *Repository) GetUserStatus(id int64) (string, error) {
 	return status, nil
 }
 
-func (r *Repository) GetRoomList() ([]string, error) {
-	var roomList []string
+func (r *Repository) GetRoomList() ([]models.Room, error) {
+	data, err := r.db.GettAll("rooms")
+	if err != nil {
+		return nil, err
+	}
+
+	var roomList []models.Room
+	for _, roomByte := range data {
+		var room models.Room
+		err := json.Unmarshal(roomByte, &room)
+		if err != nil {
+			return nil, err
+		}
+		roomList = append(roomList, room)
+	}
 
 	return roomList, nil
 }
 
 func (r *Repository) AddRoom(room *models.Room) error {
-	return nil
+	data, err := json.Marshal(room)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.SaveBytes(room.Code, data, "rooms")
+
+	return err
 }
 
 func (r *Repository) DeleteRoom(room string) error {
