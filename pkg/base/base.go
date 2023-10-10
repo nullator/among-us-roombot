@@ -5,5 +5,5 @@ type Base interface {
 	Get(key string, bucket string) (string, error)
 	SaveBytes(key string, value []byte, bucket string) error
 	GetBytes(key string, bucket string) ([]byte, error)
-	GettAll(bucket string) ([][]byte, error)
+	GetAll(bucket string) ([][]byte, error)
 }

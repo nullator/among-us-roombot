@@ -91,7 +91,7 @@ func (db *base) GetBytes(key string, bucket string) ([]byte, error) {
 	return data, err
 }
 
-func (db *base) GettAll(bucket string) ([][]byte, error) {
+func (db *base) GetAll(bucket string) ([][]byte, error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 

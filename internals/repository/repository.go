@@ -47,7 +47,7 @@ func (r *Repository) GetUserStatus(id int64) (string, error) {
 }
 
 func (r *Repository) GetRoomList() ([]models.Room, error) {
-	data, err := r.db.GettAll("rooms")
+	data, err := r.db.GetAll("rooms")
 	if err != nil {
 		return nil, err
 	}
