@@ -39,7 +39,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				slog.String("message", update.Message.Text))
 
 			// Checking to receive feedback
-			user_status, err := b.rep.GetUserData(update.Message.Chat.ID, "feedback_status")
+			user_status, err := b.rep.GetUserStatus(update.Message.Chat.ID)
 			if err != nil {
 				slog.Error("Ошибка чтения из БД данных о статусе пользователя",
 					slog.String("error", err.Error()))
@@ -79,7 +79,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						slog.String("error", err.Error()))
 				}
 
-				err = b.rep.SaveUserData(update.Message.Chat.ID, "feedback_status", "null")
+				err = b.rep.SaveUserStatus(update.Message.Chat.ID, "null")
 				if err != nil {
 					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
 						slog.String("error", err.Error()))

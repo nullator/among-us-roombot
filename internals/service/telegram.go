@@ -20,7 +20,3 @@ func NewBotService(tg *tgbotapi.BotAPI, rep *repository.Repository) *BotService 
 func (tg *BotService) Start() {
 	tg.bot.Start()
 }
-
-func (tg *BotService) GetUserData(key string, chatID int64) (string, error) {
-	return "null", nil
-}

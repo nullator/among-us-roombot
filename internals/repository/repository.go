@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"among-us-roombot/internals/models"
 	"among-us-roombot/pkg/base"
 	"fmt"
 	"log/slog"
@@ -11,10 +12,10 @@ type Repository struct {
 }
 
 type RepositoryInterface interface {
-	SaveUserData(int64, string, string) error
-	GetUserData(int64, string) (string, error)
+	SaveUserStatus(int64, string) error
+	GetUserStatus(int64) (string, error)
 	GetRoomList() ([]string, error)
-	AddRoom(string) error
+	AddRoom(*models.Room) error
 	DeleteRoom(string) error
 }
 
@@ -24,19 +25,19 @@ func NewRepository(db base.Base) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) SaveUserData(id int64, data string, info string) error {
+func (r *Repository) SaveUserStatus(id int64, status string) error {
 	tg_id := fmt.Sprintf("%d", id)
-	err := r.db.Save(data, info, tg_id)
+	err := r.db.Save("status", status, tg_id)
 
 	slog.Debug("Успешно сохранены данные в БД")
 	return err
 
 }
 
-func (r *Repository) GetUserData(id int64, data string) (string, error) {
+func (r *Repository) GetUserStatus(id int64) (string, error) {
 	tg_id := fmt.Sprintf("%d", id)
 
-	status, err := r.db.Get(data, tg_id)
+	status, err := r.db.Get("status", tg_id)
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +51,7 @@ func (r *Repository) GetRoomList() ([]string, error) {
 	return roomList, nil
 }
 
-func (r *Repository) AddRoom(room string) error {
+func (r *Repository) AddRoom(room *models.Room) error {
 	return nil
 }
 

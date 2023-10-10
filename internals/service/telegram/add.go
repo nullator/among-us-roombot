@@ -1,8 +1,13 @@
 package telegram
 
 import (
+	"among-us-roombot/internals/models"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -10,13 +15,103 @@ import (
 func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	const path = "service.telegram.add"
 
-	room := message.Text
+	var room *models.Room
+	arg := message.CommandArguments()
+	slog.Debug("Получены аргументы команды add: %s", arg)
+
+	if arg == "" { // Если аргументы не переданы, запускаем пошаговый цикл создания комнаты
+
+		// TODO Пошаговый цикл создания комнаты
+
+	} else { // Если аргументы переданы, то разбиваем их на отдельные значения
+		values := strings.Split(arg, " ")
+		room, err := validateValues(values)
+		if err != nil {
+			switch err {
+			case models.ErrInvalidNumberArgument:
+				msg_text := "Неверное количество аргументов.\n" +
+					"Комнату можно создать 2 способами:\n" +
+					"1. Пошагово, введя команду /add и следуя инструкциям бота\n" +
+					"2. Введя команду /add и через пробел параметры, например:\n" +
+					"\"/add ABCDEF никнейм карта описание\""
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+
+			case models.ErrInvalidCode:
+				msg_text := "Неверный код комнаты.\n" +
+					"Код комнаты должен состоять из 6 латинских букв."
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+
+			case models.ErrInvalidName:
+				msg_text := "Слишком длинный никнейм.\n" +
+					"Никнейм должен состоять не более чем из 10 символов."
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+
+			case models.ErrInvalidMap:
+				msg_text := "Слишком длинное название карты.\n" +
+					"Название карты должно состоять не более чем из 10 символов."
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+
+			case models.ErrInvalidMode:
+				msg_text := "Слишком длинное описание режима игры.\n" +
+					"Описание режима игры должно состоять не более чем из 10 символов."
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+
+			default:
+				msg_text := "При выполнении команды произошла неожиданная ошибка"
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+			}
+
+		}
+
+		slog.Debug("Получены валидные аргументы команды add: %s", room)
+	}
+
+	if room == nil {
+		slog.Error("Сформирована пустая модель комнаты")
+		return fmt.Errorf("%s: %w", path, fmt.Errorf("room is nil"))
+	}
+
 	err := b.rep.AddRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Комната добавлена")
 	_, err = b.bot.Send(msg)
 	if err != nil {
@@ -26,4 +121,45 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 	slog.Info("Выполнена команда add")
 	return nil
+}
+
+func validateValues(values []string) (*models.Room, error) {
+	if len(values) != 4 {
+		return nil, models.ErrInvalidNumberArgument
+	}
+
+	code := values[0]
+	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
+	if !match {
+		return nil, models.ErrInvalidCode
+	}
+
+	name := values[1]
+	length := utf8.RuneCountInString(name)
+	if length > 10 {
+		return nil, models.ErrInvalidName
+	}
+
+	mapa := values[2]
+	length = utf8.RuneCountInString(mapa)
+	if length > 10 {
+		return nil, models.ErrInvalidMap
+	}
+
+	mode := values[3]
+	length = utf8.RuneCountInString(mode)
+	if length > 10 {
+		return nil, models.ErrInvalidMode
+	}
+
+	room := models.Room{
+		Code:       code,
+		Mode:       mode,
+		Hoster:     name,
+		Map:        mapa,
+		Descrition: "",
+		Time:       time.Now(),
+	}
+
+	return &room, nil
 }

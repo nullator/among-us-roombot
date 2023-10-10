@@ -12,7 +12,6 @@ type Service struct {
 
 type Bot interface {
 	Start()
-	GetUserData(string, int64) (string, error)
 }
 
 func NewService(bot *tgbotapi.BotAPI, rep *repository.Repository) *Service {
