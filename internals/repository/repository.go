@@ -71,11 +71,10 @@ func (r *Repository) AddRoom(room *models.Room) error {
 		return err
 	}
 
-	err = r.db.SaveBytes(room.Code, data, "rooms")
-
-	return err
+	return r.db.SaveBytes(room.Code, data, "rooms")
 }
 
 func (r *Repository) DeleteRoom(room string) error {
-	return nil
+	err := r.db.Delete(room, "rooms")
+	return err
 }

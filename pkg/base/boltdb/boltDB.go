@@ -91,6 +91,24 @@ func (db *base) GetBytes(key string, bucket string) ([]byte, error) {
 	return data, err
 }
 
+func (db *base) Delete(key string, bucket string) error {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
+	err := db.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucket))
+		if b != nil {
+			return b.Delete([]byte(key))
+		} else {
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *base) GetAll(bucket string) ([][]byte, error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()

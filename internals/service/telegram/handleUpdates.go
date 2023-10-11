@@ -93,10 +93,43 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 				}
 				slog.Debug("Успешно изменён статус в БД")
-				// break - нужен если будет код для обработки прочих сообщений
+				// break
 			}
 
-			// Proceed messages if needed
+		// Обработка нажатий на кнопки
+		case update.CallbackQuery != nil:
+			q := update.CallbackQuery.Data
+			id := update.CallbackQuery.Message.Chat.ID
+			switch q {
+			case "delete":
+				err := b.delete(update.CallbackQuery.Message)
+				if err != nil {
+					slog.Error("Ошибка удаления комнаты",
+						slog.String("error", err.Error()))
+				}
+
+			case "cancel":
+				mst := tgbotapi.NewMessage(id, "Выполнение команды отменено")
+				_, err := b.bot.Send(mst)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+
+			default:
+				//
+
+			}
+
+			msg := tgbotapi.NewEditMessageReplyMarkup(
+				id, update.CallbackQuery.Message.MessageID,
+				tgbotapi.InlineKeyboardMarkup{
+					InlineKeyboard: make([][]tgbotapi.InlineKeyboardButton, 0)})
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка удаления клавиатуры",
+					slog.String("error", err.Error()))
+			}
 
 		}
 	}
