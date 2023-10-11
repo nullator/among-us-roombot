@@ -25,7 +25,8 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 	} else { // Если аргументы переданы, то разбиваем их на отдельные значения
 		values := strings.Split(arg, " ")
-		room, err := validateValues(values)
+		var err error
+		room, err = b.validateValues(values)
 		if err != nil {
 			switch err {
 			case models.ErrInvalidNumberArgument:
@@ -44,7 +45,17 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 			case models.ErrInvalidCode:
 				msg_text := "Неверный код комнаты.\n" +
-					"Код комнаты должен состоять из 6 латинских букв."
+					"Код комнаты должен состоять из 6 латинских букв"
+				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("error send message to user")
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				return nil
+
+			case models.ErrRoomAlreadyExist:
+				msg_text := "Комната с таким кодом уже существует"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -55,7 +66,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 			case models.ErrInvalidName:
 				msg_text := "Слишком длинный никнейм.\n" +
-					"Никнейм должен состоять не более чем из 10 символов."
+					"Никнейм должен состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -66,7 +77,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 			case models.ErrInvalidMap:
 				msg_text := "Слишком длинное название карты.\n" +
-					"Название карты должно состоять не более чем из 10 символов."
+					"Название карты должно состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -77,7 +88,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 			case models.ErrInvalidMode:
 				msg_text := "Слишком длинное описание режима игры.\n" +
-					"Описание режима игры должно состоять не более чем из 10 символов."
+					"Описание режима игры должно состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -123,35 +134,56 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	return nil
 }
 
-func validateValues(values []string) (*models.Room, error) {
+func (b *Telegram) validateValues(values []string) (*models.Room, error) {
+	path := "service.telegram.validateValues"
+
+	// Проверка на количество аргументов
 	if len(values) != 4 {
 		return nil, models.ErrInvalidNumberArgument
 	}
 
+	// Проверка на валидность кода комнаты
 	code := values[0]
 	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
 	if !match {
 		return nil, models.ErrInvalidCode
 	}
 
+	// Проверка на уникальность кода комнаты
+	var rooms models.RoomList
+	rooms, err := b.rep.GetRoomList()
+	if err != nil {
+		slog.Error("Ошибка получения списка комнат из БД")
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	for _, room := range rooms {
+		if room.Code == code {
+			return nil, models.ErrRoomAlreadyExist
+		}
+	}
+
+	// Проверка на длину ника
 	name := values[1]
 	length := utf8.RuneCountInString(name)
 	if length > 10 {
 		return nil, models.ErrInvalidName
 	}
 
+	// Проверка на длину названия карты
 	mapa := values[2]
 	length = utf8.RuneCountInString(mapa)
 	if length > 10 {
 		return nil, models.ErrInvalidMap
 	}
 
+	// Проверка на длину описания режима игры
 	mode := values[3]
 	length = utf8.RuneCountInString(mode)
 	if length > 10 {
 		return nil, models.ErrInvalidMode
 	}
 
+	// Формирование и возврат модели комнаты
 	room := models.Room{
 		Code:       code,
 		Mode:       mode,

@@ -1,8 +1,10 @@
 package telegram
 
 import (
+	"among-us-roombot/internals/models"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -10,27 +12,24 @@ import (
 
 func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	const path = "service.telegram.list"
+	var rooms models.RoomList
 
-	_, err := b.rep.GetRoomList()
+	rooms, err := b.rep.GetRoomList()
 	if err != nil {
 		slog.Error("Ошибка получения списка комнат из БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	rooms := map[string][]string{
-		"AAAAAA": {"Skeld", "Хост 1", "Классика"},
-		"BCVQQQ": {"Все", "младше 10", "прятки"},
-		"NBVFFF": {"Polus", "старше 60", "душнилово"},
-	}
+	sort.Sort(rooms)
 
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
 	i := 1
 	indent := ""
-	for code, room := range rooms {
+	for _, room := range rooms {
 		indent = strings.Repeat(" ", 9)
-		msgText += fmt.Sprintf("`%s`    ╭  🚀  %-10s\n", indent, room[0])
-		msgText += fmt.Sprintf("*%d\\. *`%-6s`       \\-   👑   *%-10s*\n", i, code, room[1])
-		msgText += fmt.Sprintf("`%s`    ╰  🎲  %-10s\n\n", indent, room[2])
+		msgText += fmt.Sprintf("`%s`    ╭  🚀  %-10s\n", indent, room.Map)
+		msgText += fmt.Sprintf("*%d\\. *`%-6s`       \\-   👑   *%-10s*\n", i, room.Code, room.Hoster)
+		msgText += fmt.Sprintf("`%s`    ╰  🎲  %-10s\n\n", indent, room.Mode)
 		i++
 	}
 
