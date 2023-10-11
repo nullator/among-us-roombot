@@ -8,7 +8,7 @@ import (
 )
 
 func (b *Telegram) handleDel(message *tgbotapi.Message) error {
-	const path = "service.telegram.delete"
+	const path = "service.telegram.delete.handleDel"
 
 	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
@@ -44,12 +44,12 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Выполнена команда delete")
+	slog.Info("Запущено удаление комнаты, жду подтверждение")
 	return nil
 }
 
 func (b *Telegram) delete(message *tgbotapi.Message) error {
-	const path = "service.telegram.delete"
+	const path = "service.telegram.delete.delete"
 
 	// Удалить из базы данных
 	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")

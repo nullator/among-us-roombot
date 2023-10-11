@@ -17,6 +17,7 @@ type RepositoryInterface interface {
 	GetUserStatus(int64, string) (string, error)
 	GetRoomList() ([]models.Room, error)
 	AddRoom(*models.Room) error
+	GetRoom(string) (*models.Room, error)
 	DeleteRoom(string) error
 }
 
@@ -72,6 +73,21 @@ func (r *Repository) AddRoom(room *models.Room) error {
 	}
 
 	return r.db.SaveBytes(room.Code, data, "rooms")
+}
+
+func (r *Repository) GetRoom(code string) (*models.Room, error) {
+	data, err := r.db.GetBytes(code, "rooms")
+	if err != nil {
+		return nil, err
+	}
+
+	var room models.Room
+	err = json.Unmarshal(data, &room)
+	if err != nil {
+		return nil, err
+	}
+
+	return &room, nil
 }
 
 func (r *Repository) DeleteRoom(room string) error {

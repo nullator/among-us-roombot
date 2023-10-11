@@ -10,7 +10,7 @@ import (
 func (b *Telegram) handleFeedback(message *tgbotapi.Message) error {
 	const path = "service.telegram.feedback"
 
-	err := b.rep.SaveUserStatus(message.Chat.ID, "feedback_status", "wait_feedback")
+	err := b.rep.SaveUserStatus(message.Chat.ID, "status", "wait_feedback")
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
 			slog.String("error", err.Error()))
