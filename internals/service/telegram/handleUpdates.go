@@ -30,6 +30,13 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						slog.String("cmd", update.Message.Command()),
 						slog.String("error", err.Error()),
 					)
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+						"Произошла неожиданная ошибка при обработке команды")
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						slog.Error("error send message to user")
+					}
+
 				}
 				continue
 			}

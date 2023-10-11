@@ -15,6 +15,24 @@ import (
 func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	const path = "service.telegram.add"
 
+	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	if exist_room != "" {
+		msg_text := fmt.Sprintf("Вы уже создали комнату %s.\n"+
+			"Для удаления существующей комнаты введите команду /del\n"+
+			"Для редактирования существующей комнаты введите команду /edit", exist_room)
+		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+		_, err := b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		return nil
+	}
+
 	var room *models.Room
 	arg := message.CommandArguments()
 	slog.Debug("Получены аргументы команды add: %s", arg)
@@ -25,7 +43,6 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 	} else { // Если аргументы переданы, то разбиваем их на отдельные значения
 		values := strings.Split(arg, " ")
-		var err error
 		room, err = b.validateValues(values)
 		if err != nil {
 			switch err {
@@ -118,7 +135,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, fmt.Errorf("room is nil"))
 	}
 
-	err := b.rep.AddRoom(room)
+	err = b.rep.AddRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -127,6 +144,12 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	err = b.rep.SaveUserStatus(message.Chat.ID, "room", room.Code)
+	if err != nil {
+		slog.Error("Ошибка сохранения в БД данных о созданной пользователем комнате")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
@@ -148,6 +171,7 @@ func (b *Telegram) validateValues(values []string) (*models.Room, error) {
 	if !match {
 		return nil, models.ErrInvalidCode
 	}
+	code = strings.ToUpper(code)
 
 	// Проверка на уникальность кода комнаты
 	var rooms models.RoomList
