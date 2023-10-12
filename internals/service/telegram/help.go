@@ -16,6 +16,7 @@ func (b *Telegram) handleHelp(message *tgbotapi.Message) error {
 		"/del - удалить комнату\n"+
 		"/rules - правила игры\n"+
 		"/help - список команд\n")
+	msg.ReplyMarkup = list_kb
 	_, err := b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")

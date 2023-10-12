@@ -23,6 +23,7 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 		msg_text := "У вас нет созданной комнаты.\n" +
 			"Для создания комнаты введите команду /add"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
 		if err != nil {
 			slog.Error("error send message to user")

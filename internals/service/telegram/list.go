@@ -23,6 +23,20 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	sort.Sort(rooms)
 
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
+
+	if len(rooms) == 0 {
+		msgText += "Пока нет ни одной комнаты 😔\nСоздай свою комнату с помощью команды /add"
+		msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
+		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = list_kb
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		return nil
+	}
+
 	i := 1
 	indent := ""
 	for _, room := range rooms {
@@ -37,6 +51,7 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	msgText += "||Если копировать, то полностью 😊||"
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
+	msg.ReplyMarkup = list_kb
 	msg.ParseMode = "MarkdownV2"
 
 	_, err = b.bot.Send(msg)

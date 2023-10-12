@@ -25,6 +25,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			"Для удаления существующей комнаты введите команду /del\n"+
 			"Для редактирования существующей комнаты введите команду /edit", exist_room)
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
 		if err != nil {
 			slog.Error("error send message to user")
@@ -53,6 +54,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					"2. Введя команду /add и через пробел параметры, например:\n" +
 					"\"/add ABCDEF никнейм карта описание\""
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -64,6 +66,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 				msg_text := "Неверный код комнаты.\n" +
 					"Код комнаты должен состоять из 6 латинских букв"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -74,6 +77,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			case models.ErrRoomAlreadyExist:
 				msg_text := "Комната с таким кодом уже существует"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -85,6 +89,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 				msg_text := "Слишком длинный никнейм.\n" +
 					"Никнейм должен состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -96,6 +101,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 				msg_text := "Слишком длинное название карты.\n" +
 					"Название карты должно состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -107,6 +113,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 				msg_text := "Слишком длинное описание режима игры.\n" +
 					"Описание режима игры должно состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -117,6 +124,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			default:
 				msg_text := "При выполнении команды произошла неожиданная ошибка"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("error send message to user")
@@ -141,6 +149,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Комната добавлена")
+	msg.ReplyMarkup = list_kb
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")

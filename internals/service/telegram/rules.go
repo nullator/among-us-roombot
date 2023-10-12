@@ -16,6 +16,7 @@ func (b *Telegram) handleRules(message *tgbotapi.Message) error {
 		"3. Не использовать читы\n"+
 		"4. Не использовать баги\n"+
 		"5. Не использовать никнеймы, которые могут оскорбить других игроков\n")
+	msg.ReplyMarkup = list_kb
 	_, err := b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")

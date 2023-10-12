@@ -10,7 +10,11 @@ import (
 func (b *Telegram) handleStart(message *tgbotapi.Message) error {
 	const path = "service.telegram.start"
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Привет! Я бот для создания комнат в Among Us.\n")
+	msg := tgbotapi.NewMessage(message.Chat.ID,
+		"Привет! Я запасной бот для создания комнат в Among Us.\n"+
+			"Пожалуйста пользуйся основным ботом @among_room_bot\n"+
+			"Если он не работает, то ты можешь создать комнату со мной.\n")
+	msg.ReplyMarkup = list_kb
 	_, err := b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")

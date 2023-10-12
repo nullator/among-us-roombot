@@ -11,6 +11,12 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var list_kb = tgbotapi.NewInlineKeyboardMarkup(
+	tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Список рум", "roomlist"),
+	),
+)
+
 func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 	for update := range updates {
 		switch {
@@ -76,6 +82,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							"Код комнаты должен состоять из 6 латинских букв.\n" +
 							"Попробуй ещё раз: /edit"
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -83,6 +90,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					case models.ErrRoomAlreadyExist:
 						msg_text := "Комната с таким кодом уже существует"
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -90,13 +98,16 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					default:
 						msg_text := "Произошла ошибка при изменении кода комнаты"
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
 						}
 					}
 				} else {
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Код комнаты успешно изменён")
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+						"Код комнаты успешно изменён")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -113,6 +124,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							"Слишком длинное название карты.\n"+
 								"Название карты должно состоять не более чем из 10 символов.\n"+
 								"Попробуй ещё раз: /edit")
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -120,6 +132,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					} else {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 							"Произошла ошибка при изменении названия карты")
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -128,6 +141,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				} else {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 						"Название карты успешно изменено")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -144,6 +158,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							"Слишком длинный ник.\n"+
 								"Ник должен быть не длинее 10 символов.\n"+
 								"Попробуй ещё раз: /edit")
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -151,6 +166,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					} else {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 							"Произошла ошибка при изменении ника хостера")
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -159,6 +175,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				} else {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 						"Ник хостера успешно изменён")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -176,6 +193,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							"Слишком длинное название режима.\n"+
 								"Название должно быть не длинее 10 символов.\n"+
 								"Попробуй ещё раз: /edit")
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -183,6 +201,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					} else {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 							"Произошла ошибка при изменении названия режима")
+						msg.ReplyMarkup = list_kb
 						_, err := b.bot.Send(msg)
 						if err != nil {
 							slog.Error("error send message to user")
@@ -191,6 +210,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				} else {
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 						"Описание режима успешно изменено")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -198,6 +218,8 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					}
 				}
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+
+			default:
 
 			}
 
@@ -219,6 +241,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
 						slog.String("error", err.Error()))
 					msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -238,6 +261,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
 						slog.String("error", err.Error()))
 					msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -257,6 +281,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
 						slog.String("error", err.Error()))
 					msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -276,6 +301,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
 						slog.String("error", err.Error()))
 					msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+					msg.ReplyMarkup = list_kb
 					_, err := b.bot.Send(msg)
 					if err != nil {
 						slog.Error("Ошибка отправки сообщения",
@@ -291,14 +317,19 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "cancel":
 				msg := tgbotapi.NewMessage(id, "Выполнение команды отменено")
+				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
 					slog.Error("Ошибка отправки сообщения",
 						slog.String("error", err.Error()))
 				}
 
-			default:
-				//
+			case "roomlist":
+				err := b.handleList(update.CallbackQuery.Message)
+				if err != nil {
+					slog.Error("Ошибка вывода списка комнат",
+						slog.String("error", err.Error()))
+				}
 
 			}
 
@@ -347,6 +378,7 @@ func (b *Telegram) feedback(update *tgbotapi.Update) error {
 	msg_text = "Спасибо, сообщение отправлено разработчику! " +
 		"При необходимости можно повторно ввести команду /feedback " +
 		"и отправить ещё одно сообщение, в том числе можно отправить файлы, скриншоты и т.п."
+	msg.ReplyMarkup = list_kb
 	msg = tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
 	_, err = b.bot.Send(msg)
 	if err != nil {
