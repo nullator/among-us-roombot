@@ -102,8 +102,35 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						slog.Error("Ошибка отправки сообщения",
 							slog.String("error", err.Error()))
 					}
+
+					b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 				}
+
+			case "change_map":
+				err := b.changeMap(update.Message)
+				if err != nil {
+					if err == models.ErrInvalidMap {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+							"Слишком длинное название карты.\n"+
+								"Название карты должно состоять не более чем из 10 символов.\n"+
+								"Попробуй ещё раз: /edit")
+						_, err := b.bot.Send(msg)
+						if err != nil {
+							slog.Error("error send message to user")
+						}
+					} else {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+							"Произошла ошибка при изменении названия карты")
+						_, err := b.bot.Send(msg)
+						if err != nil {
+							slog.Error("error send message to user")
+						}
+					}
+
+				}
+
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+
 			}
 
 		// Обработка нажатий на кнопки
@@ -131,6 +158,25 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					}
 				}
 				msg := tgbotapi.NewMessage(id, "Отправь мне новый код комнаты:")
+				_, err = b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+
+			case "change_map":
+				err := b.rep.SaveUserStatus(id, "status", "change_map")
+				if err != nil {
+					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
+						slog.String("error", err.Error()))
+					msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						slog.Error("Ошибка отправки сообщения",
+							slog.String("error", err.Error()))
+					}
+				}
+				msg := tgbotapi.NewMessage(id, "Отправь мне новое название карты:")
 				_, err = b.bot.Send(msg)
 				if err != nil {
 					slog.Error("Ошибка отправки сообщения",
