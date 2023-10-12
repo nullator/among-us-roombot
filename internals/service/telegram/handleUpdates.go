@@ -102,9 +102,8 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						slog.Error("Ошибка отправки сообщения",
 							slog.String("error", err.Error()))
 					}
-
-					b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 				}
+				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
 			case "change_map":
 				err := b.changeMap(update.Message)
@@ -126,9 +125,30 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							slog.Error("error send message to user")
 						}
 					}
-
 				}
+				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
+			case "change_hoster":
+				err := b.changeHoster(update.Message)
+				if err != nil {
+					if err == models.ErrInvalidName {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+							"Слишком длинный ник.\n"+
+								"Ник должен быть не длинее 10 символов.\n"+
+								"Попробуй ещё раз: /edit")
+						_, err := b.bot.Send(msg)
+						if err != nil {
+							slog.Error("error send message to user")
+						}
+					} else {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+							"Произошла ошибка при изменении ника хостера")
+						_, err := b.bot.Send(msg)
+						if err != nil {
+							slog.Error("error send message to user")
+						}
+					}
+				}
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
 			}
@@ -177,6 +197,25 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					}
 				}
 				msg := tgbotapi.NewMessage(id, "Отправь мне новое название карты:")
+				_, err = b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+
+			case "change_hoster":
+				err := b.rep.SaveUserStatus(id, "status", "change_hoster")
+				if err != nil {
+					slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
+						slog.String("error", err.Error()))
+					msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						slog.Error("Ошибка отправки сообщения",
+							slog.String("error", err.Error()))
+					}
+				}
+				msg := tgbotapi.NewMessage(id, "Отправь мне новый ник хостера:")
 				_, err = b.bot.Send(msg)
 				if err != nil {
 					slog.Error("Ошибка отправки сообщения",
