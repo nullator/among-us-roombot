@@ -206,3 +206,46 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 
 	return nil
 }
+
+func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
+	const path = "service.telegram.edit.changeDescription"
+
+	mode := message.Text
+	length := utf8.RuneCountInString(mode)
+	if length > 10 {
+		return models.ErrInvalidName
+	}
+
+	// Загрузить старую комнату из базы данных
+	old_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "room")
+	if err != nil {
+		slog.Error("Ошибка чтения из БД кода существующей комнаты")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	var old_room *models.Room
+	old_room, err = b.rep.GetRoom(old_room_code)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о существующей комнате")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	// Скорректировать код
+	old_room.Mode = mode
+
+	// Удалить старую комнату из базы данных
+	err = b.rep.DeleteRoom(old_room_code)
+	if err != nil {
+		slog.Error("Ошибка удаления комнаты из БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	// Сохранить скорректированную комнату в базу данных
+	err = b.rep.AddRoom(old_room)
+	if err != nil {
+		slog.Error("Ошибка добавления комнаты в БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	return nil
+}
