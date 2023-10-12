@@ -42,6 +42,20 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 		// TODO Пошаговый цикл создания комнаты
 
+		// Изменить статус пользователя
+		err = b.rep.SaveUserStatus(message.Chat.ID, "status", "start_add_room")
+		if err != nil {
+			slog.Error("Ошибка сохранения в БД статуса о старте создания комнаты")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		msg := tgbotapi.NewMessage(message.Chat.ID, "Введи код комнаты:")
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		return nil
+
 	} else { // Если аргументы переданы, то разбиваем их на отдельные значения
 		values := strings.Split(arg, " ")
 		room, err = b.validateValues(values)
@@ -227,4 +241,178 @@ func (b *Telegram) validateValues(values []string) (*models.Room, error) {
 	}
 
 	return &room, nil
+}
+
+func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
+	const path = "service.telegram.addDraftRoom"
+
+	code := message.Text
+	// Проверка корректности нового кода комнаты
+	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
+	if !match {
+		return models.ErrInvalidCode
+	}
+	code = strings.ToUpper(code)
+
+	// Проверка на уникальность кода комнаты
+	var rooms models.RoomList
+	rooms, err := b.rep.GetRoomList()
+	if err != nil {
+		slog.Error("Ошибка получения списка комнат из БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	for _, room := range rooms {
+		if room.Code == code {
+			return models.ErrRoomAlreadyExist
+		}
+	}
+
+	room := models.Room{
+		Code:       code,
+		Mode:       "",
+		Hoster:     "",
+		Map:        "",
+		Descrition: "",
+		Time:       time.Now(),
+	}
+	room.Code = code
+	err = b.rep.AddDraftRoom(&room)
+	if err != nil {
+		slog.Error("Ошибка добавления комнаты в БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	err = b.rep.SaveUserStatus(message.Chat.ID, "draft_room", room.Code)
+
+	return err
+}
+
+func (b *Telegram) addHostName(message *tgbotapi.Message) error {
+	const path = "service.telegram.addHostName"
+
+	name := message.Text
+	// Проверка на длину ника
+	length := utf8.RuneCountInString(name)
+	if length > 10 {
+		return models.ErrInvalidName
+	}
+
+	// Загрузить комнату из базы данных
+	draft_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "draft_room")
+	if err != nil {
+		slog.Error("Ошибка чтения из БД кода создаваемой комнаты")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	var room *models.Room
+	room, err = b.rep.GetDraftRoom(draft_room_code)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о создаваемой комнате")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	// Скорректировать ник
+	room.Hoster = name
+
+	// Сохранить скорректированную комнату в базу данных
+	err = b.rep.AddDraftRoom(room)
+	if err != nil {
+		slog.Error("Ошибка добавления комнаты в БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	return nil
+
+}
+
+func (b *Telegram) addMapName(message *tgbotapi.Message) error {
+	const path = "service.telegram.addMapName"
+
+	mapa := message.Text
+	// Проверка на длину названия карты
+	length := utf8.RuneCountInString(mapa)
+	if length > 10 {
+		return models.ErrInvalidMap
+	}
+
+	// Загрузить комнату из базы данных
+	draft_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "draft_room")
+	if err != nil {
+		slog.Error("Ошибка чтения из БД кода создаваемой комнаты")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	var room *models.Room
+	room, err = b.rep.GetDraftRoom(draft_room_code)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о создаваемой комнате")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	// Скорректировать название карты
+	room.Map = mapa
+
+	// Сохранить скорректированную комнату в базу данных
+	err = b.rep.AddDraftRoom(room)
+	if err != nil {
+		slog.Error("Ошибка добавления комнаты в БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	return nil
+}
+
+func (b *Telegram) addGameMode(message *tgbotapi.Message) error {
+	const path = "service.telegram.addGameMode"
+
+	mode := message.Text
+	// Проверка на длину описания режима игры
+	length := utf8.RuneCountInString(mode)
+	if length > 10 {
+		return models.ErrInvalidMode
+	}
+
+	// Загрузить комнату из базы данных
+	draft_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "draft_room")
+	if err != nil {
+		slog.Error("Ошибка чтения из БД кода создаваемой комнаты")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	var room *models.Room
+	room, err = b.rep.GetDraftRoom(draft_room_code)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о создаваемой комнате")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	// Скорректировать описание режима игры
+	room.Mode = mode
+	room.Time = time.Now()
+
+	// Сохранить комнату в базу данных
+	err = b.rep.AddRoom(room)
+	if err != nil {
+		slog.Error("Ошибка добавления комнаты в БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	err = b.rep.SaveUserStatus(message.Chat.ID, "room", room.Code)
+	if err != nil {
+		slog.Error("Ошибка сохранения в БД статуса о созданной пользователем комнате")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	err = b.rep.SaveUserStatus(message.Chat.ID, "draft_room", "")
+	if err != nil {
+		slog.Error("Ошибка удаления из БД статуса о черновике комнаты")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	err = b.rep.DeleteDraftRoom(draft_room_code)
+	if err != nil {
+		slog.Error("Ошибка удаления комнаты из БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	return nil
 }
