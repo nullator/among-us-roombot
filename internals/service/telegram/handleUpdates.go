@@ -125,6 +125,14 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							slog.Error("error send message to user")
 						}
 					}
+				} else {
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+						"Название карты успешно изменено")
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						slog.Error("Ошибка отправки сообщения",
+							slog.String("error", err.Error()))
+					}
 				}
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
@@ -148,7 +156,16 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 							slog.Error("error send message to user")
 						}
 					}
+				} else {
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+						"Ник хостера успешно изменён")
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						slog.Error("Ошибка отправки сообщения",
+							slog.String("error", err.Error()))
+					}
 				}
+
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
 			case "change_description":
@@ -170,6 +187,14 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 						if err != nil {
 							slog.Error("error send message to user")
 						}
+					}
+				} else {
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+						"Описание режима успешно изменено")
+					_, err := b.bot.Send(msg)
+					if err != nil {
+						slog.Error("Ошибка отправки сообщения",
+							slog.String("error", err.Error()))
 					}
 				}
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
