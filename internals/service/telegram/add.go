@@ -21,9 +21,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	if exist_room != "" {
-		msg_text := fmt.Sprintf("Вы уже создали комнату %s.\n"+
-			"Для удаления существующей комнаты введите команду /del\n"+
-			"Для редактирования существующей комнаты введите команду /edit", exist_room)
+		msg_text := fmt.Sprintf("У тебя уже есть рума, зачем тебе вторая? %s.\n"+
+			"Для удаления существующей введи команду /del\n"+
+			"Для редактирования введи команду /edit", exist_room)
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
@@ -31,6 +31,8 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)
 		}
+		slog.Info("Пользователь попытался создать вторую комнату",
+			slog.String("user", message.From.UserName))
 		return nil
 	}
 
@@ -43,12 +45,20 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		// TODO Пошаговый цикл создания комнаты
 
 		// Изменить статус пользователя
+		slog.Info("Пользователь начал пошаговое создание комнаты",
+			slog.String("user", message.From.UserName))
 		err = b.rep.SaveUserStatus(message.Chat.ID, "status", "start_add_room")
 		if err != nil {
 			slog.Error("Ошибка сохранения в БД статуса о старте создания комнаты")
 			return fmt.Errorf("%s: %w", path, err)
 		}
+		var cancel_kb = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Отменить", "cancel"),
+			),
+		)
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Введи код комнаты:")
+		msg.ReplyMarkup = cancel_kb
 		_, err = b.bot.Send(msg)
 		if err != nil {
 			slog.Error("error send message to user")
@@ -59,6 +69,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	} else { // Если аргументы переданы, то разбиваем их на отдельные значения
 		values := strings.Split(arg, " ")
 		room, err = b.validateValues(values)
+		slog.Info("Пользователь ввел аргументы команды add",
+			slog.String("user", message.From.UserName),
+			slog.String("values", arg))
 		if err != nil {
 			switch err {
 			case models.ErrInvalidNumberArgument:
@@ -74,6 +87,8 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Info("Пользователь ввел неверное количество аргументов команды add",
+					slog.String("user", message.From.UserName))
 				return nil
 
 			case models.ErrInvalidCode:
@@ -86,6 +101,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Info("Пользователь ввел неверный код комнаты",
+					slog.String("user", message.From.UserName),
+					slog.String("code", values[0]))
 				return nil
 
 			case models.ErrRoomAlreadyExist:
@@ -97,6 +115,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Info("Пользователь ввел код существующей комнаты",
+					slog.String("user", message.From.UserName),
+					slog.String("code", values[0]))
 				return nil
 
 			case models.ErrInvalidName:
@@ -109,6 +130,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Info("Пользователь ввел слишком длинный никнейм",
+					slog.String("user", message.From.UserName),
+					slog.String("name", values[1]))
 				return nil
 
 			case models.ErrInvalidMap:
@@ -121,6 +145,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Info("Пользователь ввел слишком длинное название карты",
+					slog.String("user", message.From.UserName),
+					slog.String("map", values[2]))
 				return nil
 
 			case models.ErrInvalidMode:
@@ -133,6 +160,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Info("Пользователь ввел слишком длинное описание режима игры",
+					slog.String("user", message.From.UserName),
+					slog.String("mode", values[3]))
 				return nil
 
 			default:
@@ -144,6 +174,10 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 					slog.Error("error send message to user")
 					return fmt.Errorf("%s: %w", path, err)
 				}
+				slog.Error("При выполнении команды произошла неожиданная ошибка",
+					slog.String("user", message.From.UserName),
+					slog.String("values", arg),
+					slog.String("error", err.Error()))
 				return nil
 			}
 
@@ -162,13 +196,19 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Комната добавлена")
+	msg := tgbotapi.NewMessage(message.Chat.ID, "Комната успешно добавлена")
 	msg.ReplyMarkup = list_kb
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Пользователь успешно создал комнату",
+		slog.String("user", message.From.UserName),
+		slog.String("room", room.Code),
+		slog.String("name", room.Hoster),
+		slog.String("map", room.Map),
+		slog.String("mode", room.Mode))
 
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", room.Code)
 	if err != nil {
@@ -176,7 +216,6 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Выполнена команда add")
 	return nil
 }
 
@@ -250,6 +289,9 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	// Проверка корректности нового кода комнаты
 	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
 	if !match {
+		slog.Info("Пользователь ввел неверный код комнаты",
+			slog.String("user", message.From.UserName),
+			slog.String("code", code))
 		return models.ErrInvalidCode
 	}
 	code = strings.ToUpper(code)
@@ -263,6 +305,9 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	}
 	for _, room := range rooms {
 		if room.Code == code {
+			slog.Info("Пользователь ввел код существующей комнаты",
+				slog.String("user", message.From.UserName),
+				slog.String("code", code))
 			return models.ErrRoomAlreadyExist
 		}
 	}
@@ -283,6 +328,8 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	}
 	err = b.rep.SaveUserStatus(message.Chat.ID, "draft_room", room.Code)
 
+	slog.Info("Пользователь успешно создал черновик комнаты",
+		slog.String("user", message.From.UserName))
 	return err
 }
 
@@ -293,6 +340,9 @@ func (b *Telegram) addHostName(message *tgbotapi.Message) error {
 	// Проверка на длину ника
 	length := utf8.RuneCountInString(name)
 	if length > 10 {
+		slog.Info("Пользователь ввел слишком длинный никнейм",
+			slog.String("user", message.From.UserName),
+			slog.String("name", name))
 		return models.ErrInvalidName
 	}
 
@@ -320,6 +370,9 @@ func (b *Telegram) addHostName(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	slog.Info("Пользователь успешно добавил никнейм в черновик комнаты",
+		slog.String("user", message.From.UserName),
+		slog.String("name", name))
 	return nil
 
 }
@@ -331,6 +384,9 @@ func (b *Telegram) addMapName(message *tgbotapi.Message) error {
 	// Проверка на длину названия карты
 	length := utf8.RuneCountInString(mapa)
 	if length > 10 {
+		slog.Info("Пользователь ввел слишком длинное название карты",
+			slog.String("user", message.From.UserName),
+			slog.String("map", mapa))
 		return models.ErrInvalidMap
 	}
 
@@ -358,6 +414,9 @@ func (b *Telegram) addMapName(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	slog.Info("Пользователь успешно добавил название карты в черновик комнаты",
+		slog.String("user", message.From.UserName),
+		slog.String("map", mapa))
 	return nil
 }
 
@@ -368,6 +427,9 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message) error {
 	// Проверка на длину описания режима игры
 	length := utf8.RuneCountInString(mode)
 	if length > 10 {
+		slog.Info("Пользователь ввел слишком длинное описание режима игры",
+			slog.String("user", message.From.UserName),
+			slog.String("mode", mode))
 		return models.ErrInvalidMode
 	}
 
@@ -414,5 +476,11 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	slog.Info("Пользователь успешно пошагово создал комнату",
+		slog.String("user", message.From.UserName),
+		slog.String("room", room.Code),
+		slog.String("name", room.Hoster),
+		slog.String("map", room.Map),
+		slog.String("mode", room.Mode))
 	return nil
 }
