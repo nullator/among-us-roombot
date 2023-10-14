@@ -15,3 +15,6 @@ clean:
 
 mock:
 	mockery --all
+
+deploy: build
+	./deploy.sh
