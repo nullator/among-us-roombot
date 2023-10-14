@@ -89,7 +89,8 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 			case models.ErrInvalidCode:
 				msg_text := "Неверный код комнаты.\n" +
-					"Код комнаты должен состоять из 6 латинских букв"
+					"Код комнаты должен состоять из 6 латинских букв, " +
+					"последняя буква может быть только F, G, Q, f, g или q"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
@@ -234,7 +235,7 @@ func (b *Telegram) validateValues(values []string) (*models.Room, error) {
 
 	// Проверка на валидность кода комнаты
 	code := values[0]
-	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
+	match, _ := regexp.MatchString("^[a-zA-Z]{5}[fgqFGQ]$", code)
 	if !match {
 		return nil, models.ErrInvalidCode
 	}

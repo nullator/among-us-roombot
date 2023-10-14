@@ -32,7 +32,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			switch err {
 			case models.ErrInvalidCode:
 				msg_text := "Неверный код комнаты.\n" +
-					"Код комнаты должен состоять из 6 латинских букв.\n" +
+					"Код комнаты должен состоять из 6 латинских букв, " +
+					"последняя буква может быть только F, G, Q, f, g или q.\n" +
 					"Попробуй ещё раз: /edit"
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb

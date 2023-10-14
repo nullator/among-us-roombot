@@ -31,7 +31,7 @@ func (b *Telegram) checkRooms() error {
 
 	for _, room := range rooms {
 		// Проверка на предупреждения
-		if time.Now().After(room.Time.Add(time.Minute * 240)) {
+		if time.Now().After(room.Time.Add(time.Minute * 120)) {
 			slog.Debug("Комната устарела, но пока не удаляется",
 				slog.String("room", room.Code))
 
@@ -73,7 +73,7 @@ func (b *Telegram) checkRooms() error {
 		}
 
 		// Удаление комнаты
-		if time.Now().After(room.Time.Add(time.Minute * 270)) {
+		if time.Now().After(room.Time.Add(time.Minute * 140)) {
 			slog.Debug("Комната устарела, удаляю",
 				slog.String("room", room.Code))
 
