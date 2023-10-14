@@ -29,6 +29,9 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)
 		}
+		slog.Info("Попытка изменить комнату пользователем у котого нет румы",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID))
 		return nil
 	}
 

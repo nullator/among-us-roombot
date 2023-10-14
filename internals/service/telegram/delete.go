@@ -40,7 +40,7 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 			}
 			slog.Info("Комната удалена администратором",
 				slog.String("code", code),
-				slog.String("admin", fmt.Sprint(message.Chat.ID)),
+				slog.String("admin", fmt.Sprint(message.From.String())),
 				slog.String("user", message.Chat.UserName),
 				slog.Int64("id", message.Chat.ID))
 
@@ -48,7 +48,7 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		} else {
 			slog.Info("Попытка удаления комнаты не администратором",
 				slog.String("code", code),
-				slog.String("user", message.Chat.UserName),
+				slog.String("user", message.From.String()),
 				slog.Int64("id", message.Chat.ID))
 		}
 	}
@@ -69,7 +69,7 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 			return fmt.Errorf("%s: %w", path, err)
 		}
 		slog.Info("Пользователь у которого нет созданной комнаты пытается удалить комнату",
-			slog.String("user", message.Chat.UserName),
+			slog.String("user", message.From.String()),
 			slog.Int64("id", message.Chat.ID))
 		return nil
 	}
@@ -92,7 +92,7 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 	}
 
 	slog.Info("Запущено удаление комнаты",
-		slog.String("user", message.Chat.UserName),
+		slog.String("user", message.From.String()),
 		slog.Int64("id", message.Chat.ID),
 		slog.String("room", exist_room))
 	return nil
@@ -132,7 +132,7 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	slog.Info("Комната удалена пользователем",
-		slog.String("user", message.Chat.UserName),
+		slog.String("user", message.From.String()),
 		slog.Int64("id", message.Chat.ID))
 
 	return nil
