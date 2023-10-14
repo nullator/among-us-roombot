@@ -113,12 +113,12 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	// Скорректировать код
 	old_room.Code = code
 
-	// // Удалить старую комнату из базы данных
-	// err = b.rep.DeleteRoom(old_room_code)
-	// if err != nil {
-	// 	slog.Error("Ошибка удаления комнаты из БД")
-	// 	return fmt.Errorf("%s: %w", path, err)
-	// }
+	// Удалить старую комнату из базы данных
+	err = b.rep.DeleteRoom(old_room_code)
+	if err != nil {
+		slog.Error("Ошибка удаления комнаты из БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
