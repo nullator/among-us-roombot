@@ -16,8 +16,8 @@ type RepositoryInterface interface {
 	SaveUserStatus(int64, string, string) error
 	GetUserStatus(int64, string) (string, error)
 	GetRoomList() ([]models.Room, error)
-	AddRoom(*models.Room) error
-	AddDraftRoom(*models.Room) error
+	SaveRoom(*models.Room) error
+	SaveDraftRoom(*models.Room) error
 	GetRoom(string) (*models.Room, error)
 	GetDraftRoom(string) (*models.Room, error)
 	DeleteRoom(string) error
@@ -69,7 +69,7 @@ func (r *Repository) GetRoomList() ([]models.Room, error) {
 	return roomList, nil
 }
 
-func (r *Repository) AddRoom(room *models.Room) error {
+func (r *Repository) SaveRoom(room *models.Room) error {
 	data, err := json.Marshal(room)
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func (r *Repository) AddRoom(room *models.Room) error {
 	return r.db.SaveBytes(room.Code, data, "rooms")
 }
 
-func (r *Repository) AddDraftRoom(room *models.Room) error {
+func (r *Repository) SaveDraftRoom(room *models.Room) error {
 	data, err := json.Marshal(room)
 	if err != nil {
 		return err

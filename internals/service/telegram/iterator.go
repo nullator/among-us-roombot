@@ -60,7 +60,7 @@ func (b *Telegram) checkRooms() error {
 					return fmt.Errorf("%s: %w", path, err)
 				}
 				room.Warning = true
-				err = b.rep.AddRoom(&room)
+				err = b.rep.SaveRoom(&room)
 				if err != nil {
 					slog.Error("Ошибка сохранения в БД данных о предупреждении",
 						slog.String("error", err.Error()))
@@ -130,7 +130,7 @@ func (b *Telegram) addTime(message *tgbotapi.Message) error {
 	room.Warning = false
 
 	// Сохранить в БД
-	err = b.rep.AddRoom(room)
+	err = b.rep.SaveRoom(room)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о комнате",
 			slog.String("error", err.Error()))

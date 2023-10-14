@@ -195,7 +195,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, fmt.Errorf("room is nil"))
 	}
 
-	err = b.rep.AddRoom(room)
+	err = b.rep.SaveRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -332,7 +332,7 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 		Warning:    false,
 	}
 	room.Code = code
-	err = b.rep.AddDraftRoom(&room)
+	err = b.rep.SaveDraftRoom(&room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -377,7 +377,7 @@ func (b *Telegram) addHostName(message *tgbotapi.Message) error {
 	room.Hoster = name
 
 	// Сохранить скорректированную комнату в базу данных
-	err = b.rep.AddDraftRoom(room)
+	err = b.rep.SaveDraftRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -423,7 +423,7 @@ func (b *Telegram) addMapName(message *tgbotapi.Message) error {
 	room.Map = mapa
 
 	// Сохранить скорректированную комнату в базу данных
-	err = b.rep.AddDraftRoom(room)
+	err = b.rep.SaveDraftRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -469,7 +469,7 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message) error {
 	room.Time = time.Now()
 
 	// Сохранить комнату в базу данных
-	err = b.rep.AddRoom(room)
+	err = b.rep.SaveRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)

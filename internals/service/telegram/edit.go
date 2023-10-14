@@ -124,7 +124,7 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	}
 
 	// Сохранить скорректированную комнату в базу данных
-	err = b.rep.AddRoom(old_room)
+	err = b.rep.SaveRoom(old_room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -175,7 +175,7 @@ func (b *Telegram) changeMap(message *tgbotapi.Message) error {
 	old_room.Warning = false
 
 	// Сохранить скорректированную комнату в базу данных
-	err = b.rep.AddRoom(old_room)
+	err = b.rep.SaveRoom(old_room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -221,7 +221,7 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	old_room.Warning = false
 
 	// Сохранить скорректированную комнату в базу данных
-	err = b.rep.AddRoom(old_room)
+	err = b.rep.SaveRoom(old_room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
@@ -267,7 +267,7 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
 	old_room.Warning = false
 
 	// Сохранить скорректированную комнату в базу данных
-	err = b.rep.AddRoom(old_room)
+	err = b.rep.SaveRoom(old_room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
