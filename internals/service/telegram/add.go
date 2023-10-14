@@ -184,7 +184,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			}
 
 		}
-
+		if room != nil {
+			room.ID = message.Chat.ID
+		}
 		slog.Debug("Получены валидные аргументы команды add: %s", room)
 	}
 
@@ -207,7 +209,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	}
 	slog.Info("Пользователь успешно создал комнату",
 		slog.String("user", message.From.String()),
-		slog.Int64("id", message.Chat.ID),
+		slog.Int64("id", room.ID),
 		slog.String("room", room.Code),
 		slog.String("name", room.Hoster),
 		slog.String("map", room.Map),
@@ -280,6 +282,8 @@ func (b *Telegram) validateValues(values []string) (*models.Room, error) {
 		Map:        mapa,
 		Descrition: "",
 		Time:       time.Now(),
+		ID:         0,
+		Warning:    false,
 	}
 
 	return &room, nil
@@ -324,6 +328,8 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 		Map:        "",
 		Descrition: "",
 		Time:       time.Now(),
+		ID:         message.Chat.ID,
+		Warning:    false,
 	}
 	room.Code = code
 	err = b.rep.AddDraftRoom(&room)

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -112,6 +113,8 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 
 	// Скорректировать код
 	old_room.Code = code
+	old_room.Time = time.Now()
+	old_room.Warning = false
 
 	// Удалить старую комнату из базы данных
 	err = b.rep.DeleteRoom(old_room_code)
@@ -168,6 +171,8 @@ func (b *Telegram) changeMap(message *tgbotapi.Message) error {
 	}
 
 	old_room.Map = mapa
+	old_room.Time = time.Now()
+	old_room.Warning = false
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -212,6 +217,8 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	}
 
 	old_room.Hoster = hoster
+	old_room.Time = time.Now()
+	old_room.Warning = false
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -256,6 +263,8 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
 	}
 
 	old_room.Mode = mode
+	old_room.Time = time.Now()
+	old_room.Warning = false
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)

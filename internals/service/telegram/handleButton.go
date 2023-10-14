@@ -15,6 +15,13 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 				slog.String("error", err.Error()))
 		}
 
+	case "add_time":
+		err := b.addTime(update.CallbackQuery.Message)
+		if err != nil {
+			slog.Error("Ошибка добавления времени",
+				slog.String("error", err.Error()))
+		}
+
 	case "change_code":
 		slog.Info("Зафиксировано нажатие на кнопку изменения кода комнаты",
 			slog.String("user", update.CallbackQuery.Message.Chat.UserName),

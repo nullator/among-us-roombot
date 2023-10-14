@@ -12,6 +12,8 @@ type Room struct {
 	Map        string    `json:"map"`
 	Descrition string    `json:"description"`
 	Time       time.Time `json:"time"`
+	ID         int64     `json:"id"`
+	Warning    bool      `json:"status"`
 }
 
 type RoomList []Room

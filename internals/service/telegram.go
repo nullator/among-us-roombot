@@ -18,5 +18,6 @@ func NewBotService(tg *tgbotapi.BotAPI, rep *repository.Repository) *BotService 
 }
 
 func (tg *BotService) Start() {
+	go tg.bot.Iterate()
 	tg.bot.Start()
 }
