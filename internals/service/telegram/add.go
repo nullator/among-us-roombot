@@ -51,11 +51,6 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			slog.Error("Ошибка сохранения в БД статуса о старте создания комнаты")
 			return fmt.Errorf("%s: %w", path, err)
 		}
-		var cancel_kb = tgbotapi.NewInlineKeyboardMarkup(
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Отменить", "cancel"),
-			),
-		)
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Введи код комнаты:")
 		msg.ReplyMarkup = cancel_kb
 		_, err = b.bot.Send(msg)

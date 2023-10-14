@@ -19,6 +19,7 @@ func (b *Telegram) handleFeedback(message *tgbotapi.Message) error {
 	msg_text := fmt.Sprintf("Введи сообщение, которое будет доставлено разработчику бота" +
 		" (можно приложить файлы, скриншоты и т.п.):\n")
 	msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+	msg.ReplyMarkup = cancel_kb
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user",
