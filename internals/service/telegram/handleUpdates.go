@@ -414,7 +414,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "change_code":
 				slog.Info("Зафиксировано нажатие на кнопку изменения кода комнаты",
-					slog.String("user", update.CallbackQuery.From.String()),
+					slog.String("user", update.CallbackQuery.Message.From.String()),
 					slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 				err := b.rep.SaveUserStatus(id, "status", "edit_code")
 				if err != nil {
@@ -437,7 +437,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "change_map":
 				slog.Info("Зафиксировано нажатие на кнопку изменения названия карты",
-					slog.String("user", update.CallbackQuery.From.String()),
+					slog.String("user", update.CallbackQuery.Message.From.String()),
 					slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 				err := b.rep.SaveUserStatus(id, "status", "change_map")
 				if err != nil {
@@ -460,7 +460,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "change_hoster":
 				slog.Info("Зафиксировано нажатие на кнопку изменения ника хостера",
-					slog.String("user", update.CallbackQuery.From.String()),
+					slog.String("user", update.CallbackQuery.Message.From.String()),
 					slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 				err := b.rep.SaveUserStatus(id, "status", "change_hoster")
 				if err != nil {
@@ -483,7 +483,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "change_description":
 				slog.Info("Зафиксировано нажатие на кнопку изменения названия режима",
-					slog.String("user", update.CallbackQuery.From.String()),
+					slog.String("user", update.CallbackQuery.Message.From.String()),
 					slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 				err := b.rep.SaveUserStatus(id, "status", "change_description")
 				if err != nil {
@@ -506,7 +506,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "cancel":
 				slog.Info("Зафиксировано нажатие на кнопку отмены команды",
-					slog.String("user", update.CallbackQuery.From.String()),
+					slog.String("user", update.CallbackQuery.Message.From.String()),
 					slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 				err := b.rep.SaveUserStatus(id, "status", "null")
 				if err != nil {
@@ -523,7 +523,7 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 
 			case "roomlist":
 				slog.Info("Зафиксировано нажатие на кнопку вывода списка комнат",
-					slog.String("user", update.CallbackQuery.From.String()),
+					slog.String("user", update.CallbackQuery.Message.From.String()),
 					slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 				err := b.handleList(update.CallbackQuery.Message)
 				if err != nil {

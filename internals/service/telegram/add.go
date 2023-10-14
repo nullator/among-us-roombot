@@ -42,9 +42,6 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	slog.Debug("Получены аргументы команды add: %s", arg)
 
 	if arg == "" { // Если аргументы не переданы, запускаем пошаговый цикл создания комнаты
-
-		// TODO Пошаговый цикл создания комнаты
-
 		// Изменить статус пользователя
 		slog.Info("Пользователь начал пошаговое создание комнаты",
 			slog.String("user", message.From.String()),
