@@ -41,9 +41,15 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 			slog.Info("Комната удалена администратором",
 				slog.String("code", code),
 				slog.String("admin", fmt.Sprint(message.Chat.ID)),
-				slog.String("username", message.Chat.UserName))
+				slog.String("user", message.Chat.UserName),
+				slog.Int64("id", message.Chat.ID))
 
 			return nil
+		} else {
+			slog.Info("Попытка удаления комнаты не администратором",
+				slog.String("code", code),
+				slog.String("user", message.Chat.UserName),
+				slog.Int64("id", message.Chat.ID))
 		}
 	}
 
@@ -62,6 +68,9 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)
 		}
+		slog.Info("Пользователь у которого нет созданной комнаты пытается удалить комнату",
+			slog.String("user", message.Chat.UserName),
+			slog.Int64("id", message.Chat.ID))
 		return nil
 	}
 
@@ -82,7 +91,10 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Запущено удаление комнаты, жду подтверждение")
+	slog.Info("Запущено удаление комнаты",
+		slog.String("user", message.Chat.UserName),
+		slog.Int64("id", message.Chat.ID),
+		slog.String("room", exist_room))
 	return nil
 }
 
@@ -100,6 +112,8 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 		slog.Error("Ошибка удаления комнаты из БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Комната удалена из БД",
+		slog.String("room", exist_room))
 
 	// Обновить статус
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", "")
@@ -109,7 +123,6 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 	}
 
 	// Отправить сообщение пользователю и удалить кнопку удаления
-
 	msg_text := fmt.Sprintf("Комната %s удалена", exist_room)
 	msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 	msg.ReplyMarkup = list_kb
@@ -118,9 +131,11 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 		slog.Error("error send message to user")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Комната удалена пользователем",
+		slog.String("user", message.Chat.UserName),
+		slog.Int64("id", message.Chat.ID))
 
 	return nil
-
 }
 
 func (b *Telegram) isAdmin(list []string, id string) bool {
