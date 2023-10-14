@@ -35,7 +35,7 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 			return fmt.Errorf("%s: %w", path, err)
 		}
 		slog.Info("Пользователю отправлен пустой список комнат",
-			slog.String("user", message.From.String()),
+			slog.String("user", message.Chat.UserName),
 			slog.Int64("id", message.Chat.ID))
 
 		return nil
@@ -65,7 +65,7 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	}
 
 	slog.Info("Пользователю отправлен список комнат",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID))
 	return nil
 }
