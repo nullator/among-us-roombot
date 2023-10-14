@@ -25,7 +25,7 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
 
 	if len(rooms) == 0 {
-		msgText += "Пока нет ни одной комнаты 😔\nСоздай свою комнату с помощью команды /add"
+		msgText = "Пока нет ни одной комнаты 😔\nСоздай свою комнату с помощью команды /add"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 		msg.ParseMode = "MarkdownV2"
 		msg.ReplyMarkup = list_kb
@@ -34,6 +34,10 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)
 		}
+		slog.Info("Пользователю отправлен пустой список комнат",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID))
+
 		return nil
 	}
 
