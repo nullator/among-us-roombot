@@ -132,7 +132,7 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	slog.Info("Комната удалена пользователем",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID))
 
 	return nil

@@ -2,7 +2,10 @@ package telegram
 
 import (
 	"among-us-roombot/internals/models"
+	"fmt"
 	"log/slog"
+	"os"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -332,4 +335,55 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			slog.Int64("id", update.Message.Chat.ID),
 			slog.String("status", status))
 	}
+}
+
+func (b *Telegram) feedback(update *tgbotapi.Update) error {
+	admin_id, err := strconv.ParseInt(os.Getenv("TG_adminID"), 10, 64)
+	if err != nil {
+		slog.Error("при выполнении авторизации не удалось распарсить ID в TelegramId",
+			slog.String("error", err.Error()))
+		return err
+	}
+
+	msg_text := fmt.Sprintf("Получена обратная связь от %s содержания: %s",
+		update.Message.From.String(), update.Message.Text)
+	msg := tgbotapi.NewMessage(admin_id, msg_text)
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		slog.Error("Не удалось отправить обратную связь",
+			slog.String("error", err.Error()))
+		return err
+	}
+
+	forvard_msg := tgbotapi.NewForward(admin_id,
+		update.Message.Chat.ID,
+		update.Message.MessageID)
+	_, err = b.bot.Send(forvard_msg)
+	if err != nil {
+		slog.Error("Не удалось переслать сообщение",
+			slog.String("error", err.Error()))
+		return err
+	}
+
+	msg_text = "Спасибо, сообщение отправлено разработчику! " +
+		"При необходимости можно повторно ввести команду /feedback " +
+		"и отправить ещё одно сообщение, в том числе можно отправить файлы, скриншоты и т.п."
+	msg = tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+	msg.ReplyMarkup = list_kb
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		slog.Error("Не удалось отправить обратную связь",
+			slog.String("error", err.Error()))
+		return err
+	}
+
+	err = b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+	if err != nil {
+		slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
+			slog.String("error", err.Error()))
+		return err
+	}
+	slog.Debug("Успешно изменён статус в БД")
+
+	return nil
 }
