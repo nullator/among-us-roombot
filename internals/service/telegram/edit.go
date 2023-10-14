@@ -20,8 +20,8 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	if exist_room == "" {
-		msg_text := "У вас нет созданной комнаты.\n" +
-			"Для создания комнаты введите команду /add"
+		msg_text := "У тебя нет активной румы.\n" +
+			"Для создания введи команду /add"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
@@ -48,7 +48,7 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 			tgbotapi.NewInlineKeyboardButtonData("Отмена", "cancel"),
 		),
 	)
-	msg_text := "Что ты хочешь изменить в своей комнате?"
+	msg_text := "Что ты хочешь изменить в своей руме?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 	msg.ReplyMarkup = kb
 	_, err = b.bot.Send(msg)
@@ -57,7 +57,10 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Запущено редактирование комнаты, жду подтверждение")
+	slog.Info("Запущено редактирование комнаты",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID),
+		slog.String("room", exist_room))
 	return nil
 }
 
@@ -68,6 +71,10 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	// Проверка корректности нового кода комнаты
 	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
 	if !match {
+		slog.Info("Попытка изменить код комнаты на некорректный",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID),
+			slog.String("code", code))
 		return models.ErrInvalidCode
 	}
 	code = strings.ToUpper(code)
@@ -81,6 +88,10 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	}
 	for _, room := range rooms {
 		if room.Code == code {
+			slog.Info("Попытка изменить код комнаты на уже существующий",
+				slog.String("user", message.From.String()),
+				slog.Int64("id", message.Chat.ID),
+				slog.String("code", code))
 			return models.ErrRoomAlreadyExist
 		}
 	}
@@ -102,12 +113,12 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	// Скорректировать код
 	old_room.Code = code
 
-	// Удалить старую комнату из базы данных
-	err = b.rep.DeleteRoom(old_room_code)
-	if err != nil {
-		slog.Error("Ошибка удаления комнаты из БД")
-		return fmt.Errorf("%s: %w", path, err)
-	}
+	// // Удалить старую комнату из базы данных
+	// err = b.rep.DeleteRoom(old_room_code)
+	// if err != nil {
+	// 	slog.Error("Ошибка удаления комнаты из БД")
+	// 	return fmt.Errorf("%s: %w", path, err)
+	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -115,6 +126,10 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Комната изменена",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID),
+		slog.String("new_code", old_room_code))
 
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", code)
 	if err != nil {
@@ -131,6 +146,10 @@ func (b *Telegram) changeMap(message *tgbotapi.Message) error {
 	mapa := message.Text
 	length := utf8.RuneCountInString(mapa)
 	if length > 10 {
+		slog.Info("Попытка изменить навазине карты на слишком длинное",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID),
+			slog.String("map", mapa))
 		return models.ErrInvalidMap
 	}
 
@@ -151,12 +170,12 @@ func (b *Telegram) changeMap(message *tgbotapi.Message) error {
 	// Скорректировать код
 	old_room.Map = mapa
 
-	// Удалить старую комнату из базы данных
-	err = b.rep.DeleteRoom(old_room_code)
-	if err != nil {
-		slog.Error("Ошибка удаления комнаты из БД")
-		return fmt.Errorf("%s: %w", path, err)
-	}
+	// // Удалить старую комнату из базы данных
+	// err = b.rep.DeleteRoom(old_room_code)
+	// if err != nil {
+	// 	slog.Error("Ошибка удаления комнаты из БД")
+	// 	return fmt.Errorf("%s: %w", path, err)
+	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -164,6 +183,11 @@ func (b *Telegram) changeMap(message *tgbotapi.Message) error {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Название карты комнаты изменено",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID),
+		slog.String("code", old_room.Code),
+		slog.String("new_map", old_room_code))
 
 	return nil
 }
@@ -174,6 +198,10 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	hoster := message.Text
 	length := utf8.RuneCountInString(hoster)
 	if length > 10 {
+		slog.Info("Попытка изменить ник хоста на слишком длинный",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID),
+			slog.String("hostname", hoster))
 		return models.ErrInvalidName
 	}
 
@@ -194,12 +222,12 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	// Скорректировать код
 	old_room.Hoster = hoster
 
-	// Удалить старую комнату из базы данных
-	err = b.rep.DeleteRoom(old_room_code)
-	if err != nil {
-		slog.Error("Ошибка удаления комнаты из БД")
-		return fmt.Errorf("%s: %w", path, err)
-	}
+	// // Удалить старую комнату из базы данных
+	// err = b.rep.DeleteRoom(old_room_code)
+	// if err != nil {
+	// 	slog.Error("Ошибка удаления комнаты из БД")
+	// 	return fmt.Errorf("%s: %w", path, err)
+	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -207,6 +235,11 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Ник хоста комнаты изменен",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID),
+		slog.String("code", old_room.Code),
+		slog.String("new_hostname", hoster))
 
 	return nil
 }
@@ -217,6 +250,10 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
 	mode := message.Text
 	length := utf8.RuneCountInString(mode)
 	if length > 10 {
+		slog.Info("Попытка изменить описание на слишком длинное",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID),
+			slog.String("description", mode))
 		return models.ErrInvalidName
 	}
 
@@ -237,12 +274,12 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
 	// Скорректировать код
 	old_room.Mode = mode
 
-	// Удалить старую комнату из базы данных
-	err = b.rep.DeleteRoom(old_room_code)
-	if err != nil {
-		slog.Error("Ошибка удаления комнаты из БД")
-		return fmt.Errorf("%s: %w", path, err)
-	}
+	// // Удалить старую комнату из базы данных
+	// err = b.rep.DeleteRoom(old_room_code)
+	// if err != nil {
+	// 	slog.Error("Ошибка удаления комнаты из БД")
+	// 	return fmt.Errorf("%s: %w", path, err)
+	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -250,6 +287,11 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("Описание комнаты изменено",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID),
+		slog.String("code", old_room.Code),
+		slog.String("new_description", mode))
 
 	return nil
 }

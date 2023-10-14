@@ -59,8 +59,8 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	if exist_room == "" {
-		msg_text := "У вас нет созданной комнаты.\n" +
-			"Для создания комнаты введите команду /add"
+		msg_text := "У тебя нет активной румы.\n" +
+			"Для создания введи команду /add"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
@@ -82,7 +82,7 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		),
 	)
 
-	msg_text := fmt.Sprintf("Вы действительно хотите удалить комнату %s?", exist_room)
+	msg_text := fmt.Sprintf("Уверен что хочешь удалить комнату %s?", exist_room)
 	msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 	msg.ReplyMarkup = kb
 	_, err = b.bot.Send(msg)
