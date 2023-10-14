@@ -29,13 +29,17 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			// Checking for command input
 			if update.Message.IsCommand() {
 				slog.Info("Зафиксирована команда",
-					slog.String("sender", sender),
-					slog.String("cmd", update.Message.Text))
+					slog.String("cmd", update.Message.Text),
+					slog.String("user", sender),
+					slog.Int64("id", update.Message.Chat.ID),
+				)
 
 				if err := b.handleCommand(update.Message); err != nil {
 					slog.Error("При обработке команды произошла ошибка",
 						slog.String("cmd", update.Message.Command()),
 						slog.String("error", err.Error()),
+						slog.String("user", sender),
+						slog.Int64("id", update.Message.Chat.ID),
 					)
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 						"Произошла неожиданная ошибка при обработке команды")
@@ -49,8 +53,9 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			}
 
 			slog.Info("Получено сообщение",
-				slog.String("sender", sender),
-				slog.String("message", update.Message.Text))
+				slog.String("user", sender),
+				slog.String("message", update.Message.Text),
+				slog.Int64("id", update.Message.Chat.ID))
 
 			// Checking to receive feedback
 			user_status, err := b.rep.GetUserStatus(update.Message.Chat.ID, "status")
