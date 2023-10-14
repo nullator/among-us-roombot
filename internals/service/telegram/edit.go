@@ -167,15 +167,7 @@ func (b *Telegram) changeMap(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// Скорректировать код
 	old_room.Map = mapa
-
-	// // Удалить старую комнату из базы данных
-	// err = b.rep.DeleteRoom(old_room_code)
-	// if err != nil {
-	// 	slog.Error("Ошибка удаления комнаты из БД")
-	// 	return fmt.Errorf("%s: %w", path, err)
-	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -219,15 +211,7 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// Скорректировать код
 	old_room.Hoster = hoster
-
-	// // Удалить старую комнату из базы данных
-	// err = b.rep.DeleteRoom(old_room_code)
-	// if err != nil {
-	// 	slog.Error("Ошибка удаления комнаты из БД")
-	// 	return fmt.Errorf("%s: %w", path, err)
-	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
@@ -271,15 +255,7 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// Скорректировать код
 	old_room.Mode = mode
-
-	// // Удалить старую комнату из базы данных
-	// err = b.rep.DeleteRoom(old_room_code)
-	// if err != nil {
-	// 	slog.Error("Ошибка удаления комнаты из БД")
-	// 	return fmt.Errorf("%s: %w", path, err)
-	// }
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.AddRoom(old_room)
