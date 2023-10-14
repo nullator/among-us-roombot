@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"strings"
 
 	"log/slog"
 
@@ -87,6 +88,14 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 					slog.String("error", err.Error()))
 			}
 
+		}
+
+		if strings.ToLower(update.Message.Text) == "продлить" {
+			err := b.addTime(update.Message)
+			if err != nil {
+				slog.Error("Ошибка продления времени",
+					slog.String("error", err.Error()))
+			}
 		}
 	}
 }
