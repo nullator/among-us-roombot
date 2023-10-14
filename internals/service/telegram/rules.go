@@ -23,6 +23,8 @@ func (b *Telegram) handleRules(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Выполнена команда rules")
+	slog.Info("Пользователю отправлены правила",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID))
 	return nil
 }

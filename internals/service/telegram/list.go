@@ -60,6 +60,8 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Выполнена команда list")
+	slog.Info("Пользователю отправлен список комнат",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID))
 	return nil
 }

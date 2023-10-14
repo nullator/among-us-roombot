@@ -23,6 +23,8 @@ func (b *Telegram) handleHelp(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Выполнена команда help")
+	slog.Info("Пользователю отправлена помощь по командам",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID))
 	return nil
 }

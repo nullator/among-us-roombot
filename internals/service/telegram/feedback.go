@@ -26,6 +26,8 @@ func (b *Telegram) handleFeedback(message *tgbotapi.Message) error {
 			slog.String("error", err.Error()),
 		)
 	}
-	slog.Info("Выполнена команда feedback")
+	slog.Info("Жду обратную связь от пользователя",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID))
 	return nil
 }

@@ -21,6 +21,8 @@ func (b *Telegram) handleStart(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	slog.Info("Выполнена команда start")
+	slog.Info("Пользователь начал работу с ботом",
+		slog.String("user", message.From.String()),
+		slog.Int64("id", message.Chat.ID))
 	return nil
 }
