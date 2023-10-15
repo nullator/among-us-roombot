@@ -16,8 +16,9 @@ func (b *Telegram) handleFeedback(message *tgbotapi.Message) error {
 			slog.String("error", err.Error()))
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	msg_text := fmt.Sprintf("Введи сообщение, которое будет доставлено разработчику бота" +
-		" (можно приложить файлы, скриншоты и т.п.):\n")
+	msg_text := fmt.Sprintf("Введи сообщение, которое будет доставлено разработчику бота.\n" +
+		"Если хочешь получить обратную связь, не забудь указать как с тобой связаться.\n" +
+		"К сообщению можно приложить файлы, скриншоты, видео и т.п.:\n")
 	msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 	msg.ReplyMarkup = cancel_kb
 	_, err = b.bot.Send(msg)

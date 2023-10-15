@@ -70,10 +70,10 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		if err != nil {
 			switch err {
 			case models.ErrInvalidNumberArgument:
-				msg_text := "Неверное количество аргументов.\n" +
+				msg_text := "Неверный формат команды.\n" +
 					"Комнату можно создать 2 способами:\n" +
 					"1. Пошагово, введя команду /add и следуя инструкциям бота\n" +
-					"2. Введя команду /add и через пробел параметры, например:\n" +
+					"2. Введя команду /add и через пробел указать параметры, например:\n" +
 					"\"/add ABCDEF никнейм карта описание\""
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb
@@ -153,7 +153,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 			case models.ErrInvalidMode:
 				msg_text := "Слишком длинное описание режима игры.\n" +
-					"Описание режима игры должно состоять не более чем из 10 символов"
+					"Описание должно состоять не более чем из 10 символов"
 				msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
@@ -201,8 +201,11 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Комната успешно добавлена")
+	msg := tgbotapi.NewMessage(message.Chat.ID, "*Комната успешно добавлена*\n\n"+
+		"Для того чтобы не засорять бота неактивными комнатами, не забудь её удалить когда "+
+		"закончишь играть")
 	msg.ReplyMarkup = list_kb
+	msg.ParseMode = "markdownV2"
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")
@@ -295,7 +298,7 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 
 	code := message.Text
 	// Проверка корректности нового кода комнаты
-	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
+	match, _ := regexp.MatchString("^[a-zA-Z]{5}[fgqFGQ]$", code)
 	if !match {
 		slog.Info("Пользователь ввел неверный код комнаты",
 			slog.String("user", message.From.String()),

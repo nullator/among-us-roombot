@@ -33,7 +33,7 @@ func (b *Telegram) handleCommand(message *tgbotapi.Message) error {
 }
 
 func (b *Telegram) handleUnknown(message *tgbotapi.Message) {
-	slog.Info("Выполнена неизвестная команда",
+	slog.Info("Получена неизвестная команда",
 		slog.String("command", message.Command()),
 		slog.String("text", message.Text),
 	)

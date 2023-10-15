@@ -76,8 +76,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинное название карты.\n"+
-						"Название карты должно состоять не более чем из 10 символов.\n"+
-						"Попробуй ещё раз: /edit")
+						"Название должно состоять не более чем из 10 символов.\n"+
+						"Чтобы попробовать ещё раз введи команду /edit")
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -111,7 +111,7 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинный ник.\n"+
 						"Ник должен быть не длинее 10 символов.\n"+
-						"Попробуй ещё раз: /edit")
+						"Чтобы попробовать ещё раз введи команду /edit")
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -146,7 +146,7 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинное название режима.\n"+
 						"Название должно быть не длинее 10 символов.\n"+
-						"Попробуй ещё раз: /edit")
+						"Чтобы попробовать ещё раз введи команду /edit")
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {
@@ -179,7 +179,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			switch err {
 			case models.ErrInvalidCode:
 				msg_text := "Неверный код комнаты.\n" +
-					"Код комнаты должен состоять из 6 латинских букв.\n" +
+					"Код комнаты должен состоять из 6 латинских букв, " +
+					"последняя буква может быть только F, G, Q, f, g или q\n" +
 					"Попробуй ещё раз: /add"
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb
@@ -197,7 +198,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 					slog.Error("error send message to user")
 				}
 			default:
-				msg_text := "Произошла ошибка при изменении кода комнаты"
+				msg_text := "Произошла ошибка при создании комнаты" +
+					"Попробуй ещё раз: /add"
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
@@ -319,9 +321,11 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 
 		} else {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
-				"Комната успешно создана")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "*Комната успешно добавлена*\n\n"+
+				"Для того чтобы не засорять бота неактивными комнатами, "+
+				"не забудь её удалить когда закончишь играть")
 			msg.ReplyMarkup = list_kb
+			msg.ParseMode = "markdownV2"
 			_, err := b.bot.Send(msg)
 			if err != nil {
 				slog.Error("Ошибка отправки сообщения",
@@ -368,7 +372,7 @@ func (b *Telegram) feedback(update *tgbotapi.Update) error {
 
 	msg_text = "Спасибо, сообщение отправлено разработчику! " +
 		"При необходимости можно повторно ввести команду /feedback " +
-		"и отправить ещё одно сообщение, в том числе можно отправить файлы, скриншоты и т.п."
+		"и отправить ещё одно сообщение"
 	msg = tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
 	msg.ReplyMarkup = list_kb
 	_, err = b.bot.Send(msg)

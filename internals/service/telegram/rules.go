@@ -10,13 +10,15 @@ import (
 func (b *Telegram) handleRules(message *tgbotapi.Message) error {
 	const path = "service.telegram.rules"
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Правила:\n"+
-		"1. Не материться\n"+
-		"2. Не оскорблять других игроков\n"+
-		"3. Не использовать читы\n"+
-		"4. Не использовать баги\n"+
-		"5. Не использовать никнеймы, которые могут оскорбить других игроков\n")
+	msg := tgbotapi.NewMessage(message.Chat.ID, "*Правила:*\n\n"+
+		"1\\. Не забывай удалять неактуальные румы\\.\n\n"+
+		"2\\. Код, ник, название карты и описание режима не должны содержать оскорблений\\.\n\n"+
+		"3\\. Не спамь обратной связью\\. Пожалуйста отправляй только вопросы, замечания "+
+		"и предложения по работе бота\\. Не нужно отправлять сообщения вида \"Привет\", "+
+		"\"Как дела?\" и т\\.д\\.\n\n"+
+		"За нарушение правил может последовать бан\\.\n\n")
 	msg.ReplyMarkup = list_kb
+	msg.ParseMode = "MarkdownV2"
 	_, err := b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")

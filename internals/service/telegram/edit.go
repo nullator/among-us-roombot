@@ -70,7 +70,7 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 
 	code := message.Text
 	// Проверка корректности нового кода комнаты
-	match, _ := regexp.MatchString("^[a-zA-Z]{6}$", code)
+	match, _ := regexp.MatchString("^[a-zA-Z]{5}[fgqFGQ]$", code)
 	if !match {
 		slog.Info("Попытка изменить код комнаты на некорректный",
 			slog.String("user", message.From.String()),
