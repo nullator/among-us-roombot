@@ -21,9 +21,9 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	if exist_room != "" {
-		msg_text := fmt.Sprintf("У тебя уже есть рума, зачем тебе вторая? %s.\n"+
-			"Для удаления существующей введи команду /del\n"+
-			"Для редактирования введи команду /edit", exist_room)
+		msg_text := fmt.Sprintf("У тебя уже есть рума, зачем тебе вторая?.\n\n" +
+			"Для удаления существующей введи команду /del\n" +
+			"Для редактирования введи команду /edit")
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
