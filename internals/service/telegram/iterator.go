@@ -31,7 +31,7 @@ func (b *Telegram) checkRooms() error {
 
 	for _, room := range rooms {
 		// Проверка на предупреждения
-		if time.Now().After(room.Time.Add(time.Minute * 120)) {
+		if time.Now().After(room.Time.Add(time.Minute * 240)) {
 			slog.Debug("Комната устарела, но пока не удаляется",
 				slog.String("room", room.Code))
 
@@ -73,7 +73,7 @@ func (b *Telegram) checkRooms() error {
 		}
 
 		// Удаление комнаты
-		if time.Now().After(room.Time.Add(time.Minute * 140)) {
+		if time.Now().After(room.Time.Add(time.Minute * 270)) {
 			slog.Debug("Комната устарела, удаляю",
 				slog.String("room", room.Code))
 
@@ -115,6 +115,13 @@ func (b *Telegram) addTime(message *tgbotapi.Message) error {
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
 		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	if exist_room == "" {
+		slog.Warn("Пользователь пытается продлить несуществующую комнату",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID))
+		return nil
 	}
 
 	// Получить комнату из БД

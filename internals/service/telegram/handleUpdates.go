@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"strings"
 
 	"log/slog"
 
@@ -60,6 +61,14 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 				slog.String("message", update.Message.Text),
 				slog.Int64("id", update.Message.Chat.ID))
 
+			if strings.ToLower(update.Message.Text) == "продлить" {
+				err := b.addTime(update.Message)
+				if err != nil {
+					slog.Error("Ошибка продления времени",
+						slog.String("error", err.Error()))
+				}
+			}
+
 			// Checking status
 			user_status, err := b.rep.GetUserStatus(update.Message.Chat.ID, "status")
 			if err != nil {
@@ -88,13 +97,5 @@ func (b *Telegram) handleUpdates(updates tgbotapi.UpdatesChannel) {
 			}
 
 		}
-
-		// if strings.ToLower(update.Message.Text) == "продлить" {
-		// 	err := b.addTime(update.Message)
-		// 	if err != nil {
-		// 		slog.Error("Ошибка продления времени",
-		// 			slog.String("error", err.Error()))
-		// 	}
-		// }
 	}
 }
