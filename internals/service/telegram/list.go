@@ -25,7 +25,7 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
 
 	if len(rooms) == 0 {
-		msgText = "Пока нет ни одной комнаты 😔\nСоздай свою комнату с помощью команды /add"
+		msgText = "Пока нет ни одной румы 😔\nСоздай свою командой /add"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 		msg.ParseMode = "MarkdownV2"
 		msg.ReplyMarkup = list_kb
