@@ -209,21 +209,48 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 		} else {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
-				"Успешно создан черновик комнаты\n"+
-					"Введи ник хостера (не более 10 символов):\n")
-			msg.ReplyMarkup = cancel_kb
-			_, err := b.bot.Send(msg)
+			old_host_name, err := b.rep.GetUserStatus(update.Message.Chat.ID, "host_name")
 			if err != nil {
-				slog.Error("Ошибка отправки сообщения",
+				slog.Error("Ошибка чтения из БД данных о старом нике хостера",
 					slog.String("error", err.Error()))
+				old_host_name = ""
+			}
+			if old_host_name != "" {
+				msg_text := fmt.Sprintf("Привет, %s!\nЧтобы создать руму со своим "+
+					"предыдущим ником, нажми на соответствующую кнопку, "+
+					"или придумай новый ник и отправь мне его в чат", old_host_name)
+				kb := tgbotapi.NewInlineKeyboardMarkup(
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData(old_host_name, "save_old_name"),
+						tgbotapi.NewInlineKeyboardButtonData("Отменить", "cancel"),
+					),
+				)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, msg_text)
+				msg.ReplyMarkup = kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+
+			} else {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+					"Успешно создан черновик комнаты\n"+
+						"Введи ник хостера (не более 10 символов):\n")
+				msg.ReplyMarkup = cancel_kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
 			}
 
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_hostname")
 		}
 
 	case "wait_hostname":
-		err := b.addHostName(update.Message)
+		name := update.Message.Text
+		err := b.addHostName(update.Message, name)
 		if err != nil {
 			if err == models.ErrInvalidName {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,

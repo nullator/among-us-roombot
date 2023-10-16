@@ -349,10 +349,9 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	return err
 }
 
-func (b *Telegram) addHostName(message *tgbotapi.Message) error {
+func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 	const path = "service.telegram.addHostName"
 
-	name := message.Text
 	// Проверка на длину ника
 	length := utf8.RuneCountInString(name)
 	if length > 10 {
@@ -379,6 +378,7 @@ func (b *Telegram) addHostName(message *tgbotapi.Message) error {
 
 	// Скорректировать ник
 	room.Hoster = name
+	slog.Debug("Получен никнейм хостера: %s", name)
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.SaveDraftRoom(room)
@@ -494,6 +494,12 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message) error {
 	err = b.rep.DeleteDraftRoom(draft_room_code)
 	if err != nil {
 		slog.Error("Ошибка удаления комнаты из БД")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	err = b.rep.SaveUserStatus(message.Chat.ID, "host_name", room.Hoster)
+	if err != nil {
+		slog.Error("Ошибка сохранения в БД никнейма хостера")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 

@@ -22,7 +22,7 @@ func (b *Telegram) handleStart(message *tgbotapi.Message) error {
 	}
 
 	slog.Info("Пользователь начал работу с ботом",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID))
 	return nil
 }
