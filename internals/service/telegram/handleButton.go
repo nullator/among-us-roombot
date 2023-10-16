@@ -68,7 +68,7 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			)
 			msg := tgbotapi.NewMessage(id,
 				"Выбери название карты или введи свой вариант "+
-					"(не более 10 символов)\n")
+					"(не более 10 символов):\n")
 			msg.ReplyMarkup = kb
 			_, err := b.bot.Send(msg)
 			if err != nil {
@@ -113,6 +113,27 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 
 		b.handleMap(update, id, "Mira HQ")
+
+	case "classic":
+		slog.Info("Зафиксировано нажатие на кнопку выбора режима Classic",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMode(update, id, "Классика")
+
+	case "hide":
+		slog.Info("Зафиксировано нажатие на кнопку выбора режима Hide and Seek",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMode(update, id, "Прятки")
+
+	case "mods":
+		slog.Info("Зафиксировано нажатие на кнопку выбора режима Mods",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMode(update, id, "Моды")
 
 	case "change_code":
 		slog.Info("Зафиксировано нажатие на кнопку изменения кода комнаты",
@@ -252,15 +273,52 @@ func (b *Telegram) handleMap(update *tgbotapi.Update, id int64, mapa string) {
 				slog.String("error", err.Error()))
 		}
 	} else {
+		kb := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("👨‍🎓 Классика", "classic"),
+				tgbotapi.NewInlineKeyboardButtonData("🧌 Прятки", "hide"),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("🛠️ Моды", "mods"),
+				tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "cancel"),
+			),
+		)
 		msg := tgbotapi.NewMessage(id,
-			"Название карты успешно сохранено в черновик комнаты.\n"+
-				"Введи режим игры (не более 10 символов):\n")
-		msg.ReplyMarkup = cancel_kb
+			"Выбери режим игры или введи свой вариант "+
+				"(не более 10 символов):\n")
+		msg.ReplyMarkup = kb
 		_, err := b.bot.Send(msg)
 		if err != nil {
 			slog.Error("Ошибка отправки сообщения",
 				slog.String("error", err.Error()))
 		}
 		b.rep.SaveUserStatus(id, "status", "wait_gamemode")
+	}
+}
+
+func (b *Telegram) handleMode(update *tgbotapi.Update, id int64, mode string) {
+	err := b.addGameMode(update.CallbackQuery.Message, mode)
+	if err != nil {
+		slog.Error("Ошибка добавления режима игры",
+			slog.String("error", err.Error()))
+		msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+		msg.ReplyMarkup = list_kb
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("Ошибка отправки сообщения",
+				slog.String("error", err.Error()))
+		}
+	} else {
+		msg := tgbotapi.NewMessage(id, "*Комната успешно добавлена*\n\n"+
+			"Для того чтобы не засорять бота неактивными комнатами, "+
+			"не забудь её удалить когда закончишь играть")
+		msg.ReplyMarkup = list_kb
+		msg.ParseMode = "markdownV2"
+		_, err := b.bot.Send(msg)
+		if err != nil {
+			slog.Error("Ошибка отправки сообщения",
+				slog.String("error", err.Error()))
+		}
+		b.rep.SaveUserStatus(id, "status", "null")
 	}
 }

@@ -43,27 +43,38 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 
 	i := 1
 	indent := ""
-	var emoji string
+	var emoji_map, emoji_mode string
 	for _, room := range rooms {
 		switch room.Map {
 		case "Skeld":
-			emoji = "🚀 "
+			emoji_map = "🚀 "
 		case "Polus":
-			emoji = "⛄ "
+			emoji_map = "⛄ "
 		case "Airship":
-			emoji = "🛩️ "
+			emoji_map = "🛩️ "
 		case "Mira HQ":
-			emoji = "🏢 "
+			emoji_map = "🏢 "
 		case "Fungle":
-			emoji = "🍄 "
+			emoji_map = "🍄 "
 		default:
-			emoji = "🚀 "
+			emoji_map = "🚀 "
+		}
+
+		switch room.Mode {
+		case "Классика":
+			emoji_mode = "👨‍🎓 "
+		case "Прятки":
+			emoji_mode = "🧌 "
+		case "Моды":
+			emoji_mode = "🛠️ "
+		default:
+			emoji_mode = "🎲 "
 		}
 
 		indent = strings.Repeat(" ", 9)
-		msgText += fmt.Sprintf("`%s`    ╭  %s %-10s\n", indent, emoji, room.Map)
+		msgText += fmt.Sprintf("`%s`    ╭  %s %-10s\n", indent, emoji_map, room.Map)
 		msgText += fmt.Sprintf("*%d\\. *`%-6s`       \\-   👑   *%-10s*\n", i, room.Code, room.Hoster)
-		msgText += fmt.Sprintf("`%s`    ╰  🎲  %-10s\n\n", indent, room.Mode)
+		msgText += fmt.Sprintf("`%s`    ╰  %s %-10s\n\n", indent, emoji_mode, room.Mode)
 		i++
 	}
 

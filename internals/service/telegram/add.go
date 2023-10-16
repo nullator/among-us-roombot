@@ -439,10 +439,9 @@ func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 	return nil
 }
 
-func (b *Telegram) addGameMode(message *tgbotapi.Message) error {
+func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 	const path = "service.telegram.addGameMode"
 
-	mode := message.Text
 	// Проверка на длину описания режима игры
 	length := utf8.RuneCountInString(mode)
 	if length > 10 {

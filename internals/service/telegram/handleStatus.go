@@ -290,7 +290,7 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 				"Выбери название карты или введи свой вариант "+
-					"(не более 10 символов)\n")
+					"(не более 10 символов):\n")
 			msg.ReplyMarkup = kb
 			_, err := b.bot.Send(msg)
 			if err != nil {
@@ -326,9 +326,20 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 
 		} else {
+			kb := tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("👨‍🎓 Классика", "classic"),
+					tgbotapi.NewInlineKeyboardButtonData("🧌 Прятки", "hide"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🛠️ Моды", "mods"),
+					tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "cancel"),
+				),
+			)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
-				"Название карты успешно сохранено в черновик комнаты.\n"+
-					"Введи режим игры (не более 10 символов):\n")
+				"Выбери режим игры или введи свой вариант "+
+					"(не более 10 символов):\n")
+			msg.ReplyMarkup = kb
 			msg.ReplyMarkup = cancel_kb
 			_, err := b.bot.Send(msg)
 			if err != nil {
@@ -339,7 +350,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 		}
 
 	case "wait_gamemode":
-		err := b.addGameMode(update.Message)
+		mode := update.Message.Text
+		err := b.addGameMode(update.Message, mode)
 		if err != nil {
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
