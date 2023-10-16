@@ -71,7 +71,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
 	case "change_map":
-		err := b.changeMap(update.Message)
+		mapa := update.Message.Text
+		err := b.changeMap(update.Message, mapa)
 		if err != nil {
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
@@ -140,7 +141,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
 	case "change_description":
-		err := b.changeDescription(update.Message)
+		mode := update.Message.Text
+		err := b.changeDescription(update.Message, mode)
 		if err != nil {
 			if err == models.ErrInvalidName {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,

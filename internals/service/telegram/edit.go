@@ -143,10 +143,9 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (b *Telegram) changeMap(message *tgbotapi.Message) error {
+func (b *Telegram) changeMap(message *tgbotapi.Message, mapa string) error {
 	const path = "service.telegram.edit.changeMap"
 
-	mapa := message.Text
 	length := utf8.RuneCountInString(mapa)
 	if length > 10 {
 		slog.Info("Попытка изменить навазине карты на слишком длинное",
@@ -239,10 +238,9 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (b *Telegram) changeDescription(message *tgbotapi.Message) error {
+func (b *Telegram) changeDescription(message *tgbotapi.Message, mode string) error {
 	const path = "service.telegram.edit.changeDescription"
 
-	mode := message.Text
 	length := utf8.RuneCountInString(mode)
 	if length > 10 {
 		slog.Info("Попытка изменить описание на слишком длинное",
