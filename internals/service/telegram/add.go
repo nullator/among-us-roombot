@@ -301,7 +301,7 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	match, _ := regexp.MatchString("^[a-zA-Z]{5}[fgqFGQ]$", code)
 	if !match {
 		slog.Info("Пользователь ввел неверный код комнаты",
-			slog.String("user", message.From.String()),
+			slog.String("user", message.Chat.UserName),
 			slog.Int64("id", message.Chat.ID),
 			slog.String("code", code))
 		return models.ErrInvalidCode
@@ -318,7 +318,7 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	for _, room := range rooms {
 		if room.Code == code {
 			slog.Info("Пользователь ввел код существующей комнаты",
-				slog.String("user", message.From.String()),
+				slog.String("user", message.Chat.UserName),
 				slog.Int64("id", message.Chat.ID),
 				slog.String("code", code))
 			return models.ErrRoomAlreadyExist
@@ -344,7 +344,7 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	err = b.rep.SaveUserStatus(message.Chat.ID, "draft_room", room.Code)
 
 	slog.Info("Пользователь успешно создал черновик комнаты",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID))
 	return err
 }
@@ -356,7 +356,7 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 	length := utf8.RuneCountInString(name)
 	if length > 10 {
 		slog.Info("Пользователь ввел слишком длинный никнейм",
-			slog.String("user", message.From.String()),
+			slog.String("user", message.Chat.UserName),
 			slog.Int64("id", message.Chat.ID),
 			slog.String("name", name))
 		return models.ErrInvalidName
@@ -388,7 +388,7 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 	}
 
 	slog.Info("Пользователь успешно добавил никнейм в черновик комнаты",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID),
 		slog.String("name", name))
 	return nil
@@ -402,7 +402,7 @@ func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 	length := utf8.RuneCountInString(mapa)
 	if length > 10 {
 		slog.Info("Пользователь ввел слишком длинное название карты",
-			slog.String("user", message.From.String()),
+			slog.String("user", message.Chat.UserName),
 			slog.Int64("id", message.Chat.ID),
 			slog.String("map", mapa))
 		return models.ErrInvalidMap
@@ -433,7 +433,7 @@ func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 	}
 
 	slog.Info("Пользователь успешно добавил название карты в черновик комнаты",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID),
 		slog.String("map", mapa))
 	return nil
@@ -446,7 +446,7 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 	length := utf8.RuneCountInString(mode)
 	if length > 10 {
 		slog.Info("Пользователь ввел слишком длинное описание режима игры",
-			slog.String("user", message.From.String()),
+			slog.String("user", message.Chat.UserName),
 			slog.Int64("id", message.Chat.ID),
 			slog.String("mode", mode))
 		return models.ErrInvalidMode
@@ -502,7 +502,7 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 	}
 
 	slog.Info("Пользователь успешно пошагово создал комнату",
-		slog.String("user", message.From.String()),
+		slog.String("user", message.Chat.UserName),
 		slog.Int64("id", message.Chat.ID),
 		slog.String("room", room.Code),
 		slog.String("name", room.Hoster),
