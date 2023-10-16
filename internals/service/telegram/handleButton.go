@@ -213,8 +213,8 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 
 		b.handleNewMap(update, id, "Polus")
 
-	case "change_funlge":
-		slog.Info("Зафиксировано нажатие на кнопку изменения названия карты на Funlge",
+	case "change_fungle":
+		slog.Info("Зафиксировано нажатие на кнопку изменения названия карты на Fungle",
 			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
 			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
 
