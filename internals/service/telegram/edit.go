@@ -219,6 +219,10 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	old_room.Hoster = hoster
 	old_room.Time = time.Now()
 	old_room.Warning = false
+	err = b.rep.SaveUserStatus(message.Chat.ID, "host_name", hoster)
+	if err != nil {
+		slog.Warn("Ошибка сохранения в БД данных о новом нике хоста")
+	}
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.SaveRoom(old_room)

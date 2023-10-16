@@ -52,10 +52,24 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			}
 
 		} else {
+			kb := tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🚀 Skeld", "skeld"),
+					tgbotapi.NewInlineKeyboardButtonData("⛄ Polus", "polus"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🍄 Fungle", "fungle"),
+					tgbotapi.NewInlineKeyboardButtonData("🛩️ Airship", "airship"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🏢 Mira HQ", "mira"),
+					tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "cancel"),
+				),
+			)
 			msg := tgbotapi.NewMessage(id,
-				"Ник хостера успешно получен и сохранён в черновик комнаты.\n"+
-					"Введи название карты (не более 10 символов):\n")
-			msg.ReplyMarkup = cancel_kb
+				"Выбери название карты или введи свой вариант "+
+					"(не более 10 символов)\n")
+			msg.ReplyMarkup = kb
 			_, err := b.bot.Send(msg)
 			if err != nil {
 				slog.Error("Ошибка отправки сообщения",
@@ -64,6 +78,41 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			b.rep.SaveUserStatus(id, "status", "wait_mapname")
 
 		}
+
+	case "skeld":
+		slog.Info("Зафиксировано нажатие на кнопку выбора карты Skeld",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMap(update, id, "Skeld")
+
+	case "polus":
+		slog.Info("Зафиксировано нажатие на кнопку выбора карты Polus",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMap(update, id, "Polus")
+
+	case "fungle":
+		slog.Info("Зафиксировано нажатие на кнопку выбора карты Fungle",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMap(update, id, "Fungle")
+
+	case "airship":
+		slog.Info("Зафиксировано нажатие на кнопку выбора карты Airship",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMap(update, id, "Airship")
+
+	case "mira":
+		slog.Info("Зафиксировано нажатие на кнопку выбора карты Mira HQ",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID))
+
+		b.handleMap(update, id, "Mira HQ")
 
 	case "change_code":
 		slog.Info("Зафиксировано нажатие на кнопку изменения кода комнаты",
@@ -187,5 +236,31 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			slog.Error("Ошибка вывода списка комнат",
 				slog.String("error", err.Error()))
 		}
+	}
+}
+
+func (b *Telegram) handleMap(update *tgbotapi.Update, id int64, mapa string) {
+	err := b.addMapName(update.CallbackQuery.Message, mapa)
+	if err != nil {
+		slog.Error("Ошибка добавления названия карты",
+			slog.String("error", err.Error()))
+		msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+		msg.ReplyMarkup = list_kb
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("Ошибка отправки сообщения",
+				slog.String("error", err.Error()))
+		}
+	} else {
+		msg := tgbotapi.NewMessage(id,
+			"Название карты успешно сохранено в черновик комнаты.\n"+
+				"Введи режим игры (не более 10 символов):\n")
+		msg.ReplyMarkup = cancel_kb
+		_, err := b.bot.Send(msg)
+		if err != nil {
+			slog.Error("Ошибка отправки сообщения",
+				slog.String("error", err.Error()))
+		}
+		b.rep.SaveUserStatus(id, "status", "wait_gamemode")
 	}
 }

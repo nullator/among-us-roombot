@@ -395,10 +395,9 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 
 }
 
-func (b *Telegram) addMapName(message *tgbotapi.Message) error {
+func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 	const path = "service.telegram.addMapName"
 
-	mapa := message.Text
 	// Проверка на длину названия карты
 	length := utf8.RuneCountInString(mapa)
 	if length > 10 {

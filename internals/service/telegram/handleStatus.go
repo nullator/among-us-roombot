@@ -274,10 +274,24 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 
 		} else {
+			kb := tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🚀 Skeld", "skeld"),
+					tgbotapi.NewInlineKeyboardButtonData("⛄ Polus", "polus"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🍄 Fungle", "fungle"),
+					tgbotapi.NewInlineKeyboardButtonData("🛩️ Airship", "airship"),
+				),
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("🏢 Mira HQ", "mira"),
+					tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "cancel"),
+				),
+			)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
-				"Ник хостера успешно получен и сохранён в черновик комнаты.\n"+
-					"Введи название карты (не более 10 символов):\n")
-			msg.ReplyMarkup = cancel_kb
+				"Выбери название карты или введи свой вариант "+
+					"(не более 10 символов)\n")
+			msg.ReplyMarkup = kb
 			_, err := b.bot.Send(msg)
 			if err != nil {
 				slog.Error("Ошибка отправки сообщения",
@@ -287,7 +301,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 		}
 
 	case "wait_mapname":
-		err := b.addMapName(update.Message)
+		mapa := update.Message.Text
+		err := b.addMapName(update.Message, mapa)
 		if err != nil {
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
