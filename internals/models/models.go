@@ -18,6 +18,24 @@ type Room struct {
 
 type RoomList []Room
 
+type User struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+type Hoster struct {
+	Followers []User    `json:"subs"`
+	LastSend  time.Time `json:"last_send"`
+}
+
+type Hosters struct {
+	Hosters []Hoster `json:"hosters"`
+}
+
+type Follower struct {
+	Hosters []User `json:"hosters"`
+}
+
 func (r RoomList) Len() int {
 	return len(r)
 }
