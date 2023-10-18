@@ -22,6 +22,8 @@ type RepositoryInterface interface {
 	GetDraftRoom(string) (*models.Room, error)
 	DeleteRoom(string) error
 	DeleteDraftRoom(string) error
+	GetHostList() ([]models.Hoster, error)
+	SaveHoster(*models.Hoster) error
 }
 
 var _ RepositoryInterface = (*Repository)(nil)
@@ -125,4 +127,34 @@ func (r *Repository) DeleteRoom(room string) error {
 func (r *Repository) DeleteDraftRoom(room string) error {
 	err := r.db.Delete(room, "draft_rooms")
 	return err
+}
+
+func (r *Repository) GetHostList() ([]models.Hoster, error) {
+	data, err := r.db.GetAll("hosters")
+	if err != nil {
+		return nil, err
+	}
+
+	var hosters []models.Hoster
+	for _, hostByte := range data {
+		var hoster models.Hoster
+		err := json.Unmarshal(hostByte, &hoster)
+		if err != nil {
+			return nil, err
+		}
+		hosters = append(hosters, hoster)
+	}
+
+	return hosters, nil
+}
+
+func (r *Repository) SaveHoster(hoster *models.Hoster) error {
+	id := fmt.Sprintf("%d", hoster.ID)
+
+	data, err := json.Marshal(hoster)
+	if err != nil {
+		return err
+	}
+
+	return r.db.SaveBytes(id, data, "hosters")
 }
