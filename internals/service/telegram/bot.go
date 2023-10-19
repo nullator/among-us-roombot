@@ -8,16 +8,18 @@ import (
 )
 
 const (
-	cmdStart     = "start"
-	cmdList      = "list"
-	cmdAdd       = "add"
-	cmdDel       = "del"
-	cmdEdit      = "edit"
-	cmdRules     = "rules"
-	cmdHelp      = "help"
-	cmdAbout     = "about"
-	cmdFeedback  = "feedback"
-	cmdSubscribe = "subscribe"
+	cmdStart       = "start"
+	cmdList        = "list"
+	cmdAdd         = "add"
+	cmdDel         = "del"
+	cmdEdit        = "edit"
+	cmdRules       = "rules"
+	cmdHelp        = "help"
+	cmdAbout       = "about"
+	cmdFeedback    = "feedback"
+	cmdSubscribe   = "subscribe"
+	cmdUnsubscribe = "unsubscribe"
+	cmdAlert       = "alert"
 )
 
 type Telegram struct {
