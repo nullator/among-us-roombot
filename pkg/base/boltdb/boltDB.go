@@ -79,16 +79,15 @@ func (db *base) GetBytes(key string, bucket string) ([]byte, error) {
 		b := tx.Bucket([]byte(bucket))
 		if b != nil {
 			data = b.Get([]byte(key))
-			return nil
 		} else {
 			data = nil
-			return nil
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return data, err
+	return data, nil
 }
 
 func (db *base) Delete(key string, bucket string) error {

@@ -11,6 +11,8 @@ import (
 )
 
 func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
+	slog.Debug("Получен статус", slog.String("status", status))
+
 	switch status {
 	case "wait_feedback":
 		err := b.feedback(update)
@@ -391,10 +393,44 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 		}
 
 	default:
-		slog.Warn("Получен неизвестный статус пользователя",
-			slog.String("user", update.Message.From.String()),
-			slog.Int64("id", update.Message.Chat.ID),
-			slog.String("status", status))
+		cmd := string([]rune(status)[0:2])
+		slog.Debug("Получена команда", slog.String("cmd", cmd))
+		switch cmd {
+		case "sub":
+			userID := update.Message.Chat.ID
+			hostID_str := string([]rune(status)[4:])
+			hostID, err := strconv.ParseInt(hostID_str, 10, 64)
+
+			slog.Debug("Получены аргументы",
+				slog.Int64("userID", userID),
+				slog.Int64("hostID", hostID))
+			if err != nil {
+				slog.Error("Ошибка парсинга ID хоста",
+					slog.String("error", err.Error()))
+				return
+			}
+			err = b.subscribe(update.CallbackQuery, userID, hostID)
+			if err != nil {
+				slog.Error("Ошибка подписки",
+					slog.String("error", err.Error()))
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+					"Произошла ошибка при попытке подписаться на хостера")
+				msg.ReplyMarkup = list_kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+			}
+
+		case "uns":
+			//
+		default:
+			slog.Warn("Получен неизвестный статус пользователя",
+				slog.String("user", update.Message.From.String()),
+				slog.Int64("id", update.Message.Chat.ID),
+				slog.String("status", status))
+		}
 	}
 }
 

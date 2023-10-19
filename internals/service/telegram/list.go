@@ -20,6 +20,20 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// rooms = append(rooms, models.Room{
+	// 	Code:   "AAAAAA",
+	// 	Hoster: "hoster1",
+	// 	Map:    "Skeld",
+	// 	Mode:   "Классика",
+	// })
+
+	// rooms = append(rooms, models.Room{
+	// 	Code:   "BBBBBB",
+	// 	Hoster: "hoster2",
+	// 	Map:    "Polus",
+	// 	Mode:   "Прятки",
+	// })
+
 	sort.Sort(rooms)
 
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
@@ -29,7 +43,7 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 		msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 		msg.ParseMode = "MarkdownV2"
 		msg.ReplyMarkup = list_kb
-		_, err = b.bot.Send(msg)
+		_, err := b.bot.Send(msg)
 		if err != nil {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)

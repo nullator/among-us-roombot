@@ -25,11 +25,13 @@ type User struct {
 
 type Hoster struct {
 	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
 	Followers []User    `json:"subs"`
 	LastSend  time.Time `json:"last_send"`
 }
 
 type Follower struct {
+	ID      int64  `json:"id"`
 	Hosters []User `json:"hosters"`
 }
 

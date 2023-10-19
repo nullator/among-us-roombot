@@ -235,6 +235,20 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		slog.String("code", old_room.Code),
 		slog.String("new_hostname", hoster))
 
+	// Обновить модель хостера
+	host, err := b.rep.GetHoster(message.Chat.ID)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о хостере")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	host.Name = hoster
+	err = b.rep.SaveHoster(host)
+	if err != nil {
+		slog.Error("Ошибка сохранения в БД данных о хостере")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	slog.Info("В модели хостера успешно обновлен ник")
+
 	return nil
 }
 

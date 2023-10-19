@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"log/slog"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -340,6 +341,38 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 		if err != nil {
 			slog.Error("Ошибка вывода списка комнат",
 				slog.String("error", err.Error()))
+		}
+
+	default:
+		cmd := string([]rune(button)[0:3])
+		slog.Debug("Получена команда", slog.String("cmd", cmd))
+		switch cmd {
+		case "sub":
+			userID := update.CallbackQuery.Message.Chat.ID
+			hostID_str := string([]rune(button)[3:])
+			hostID, err := strconv.ParseInt(hostID_str, 10, 64)
+
+			slog.Debug("Получены аргументы",
+				slog.Int64("userID", userID),
+				slog.Int64("hostID", hostID))
+			if err != nil {
+				slog.Error("Ошибка парсинга ID хоста",
+					slog.String("error", err.Error()))
+				return
+			}
+			err = b.subscribe(update.CallbackQuery, userID, hostID)
+			if err != nil {
+				slog.Error("Ошибка подписки",
+					slog.String("error", err.Error()))
+				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
+					"Произошла ошибка при попытке подписаться на хостера")
+				msg.ReplyMarkup = list_kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+			}
 		}
 	}
 }
