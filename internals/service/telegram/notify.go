@@ -4,6 +4,7 @@ import (
 	"among-us-roombot/internals/models"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -37,6 +38,11 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 	}
 
 	if len(host.Followers) == 0 {
+		err = sendImage(b, message.Chat.ID, "notify.png")
+		if err != nil {
+			slog.Warn("Не удалось отправить картинку")
+		}
+
 		msg := tgbotapi.NewMessage(message.Chat.ID, "У тебя нет подписчиков 😢")
 		msg.ReplyMarkup = list_kb
 		_, err := b.bot.Send(msg)
@@ -44,6 +50,7 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)
 		}
+
 		slog.Info("Попытка отправить рассылку пользователем у которого нет подписчиков",
 			slog.String("user", message.From.String()),
 			slog.Int64("id", message.Chat.ID))
@@ -205,4 +212,37 @@ func (b *Telegram) notify(followers []models.User, post string) {
 		}
 		time.Sleep(time.Millisecond * 50)
 	}
+}
+
+func sendImage(b *Telegram, chatID int64, imagePath string) error {
+	// Открываем файл с картинкой
+	file, err := os.Open(imagePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Создаем объект File для загрузки в Telegram
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	fileBytes := make([]byte, fileInfo.Size())
+	_, err = file.Read(fileBytes)
+	if err != nil {
+		return err
+	}
+	fileObj := tgbotapi.FileBytes{
+		Name:  fileInfo.Name(),
+		Bytes: fileBytes,
+	}
+
+	// Отправляем картинку пользователю
+	msg := tgbotapi.NewPhoto(chatID, fileObj)
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
