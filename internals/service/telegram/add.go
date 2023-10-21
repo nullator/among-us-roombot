@@ -225,6 +225,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Обновление данных в модели хостера или создание новой модели
 	host, err := b.rep.GetHoster(message.Chat.ID)
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о хостере")
@@ -237,19 +238,22 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			Followers: []models.User{},
 			LastSend:  time.Now().Add(-12 * time.Hour),
 		}
+		slog.Info("Создана новая модель хостера",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", room.ID),
+			slog.String("host", host.Name))
 	} else {
 		host.Name = room.Hoster
 	}
-
-	slog.Debug("Слздана модель хостера", slog.Any("host", host))
 
 	err = b.rep.SaveHoster(host)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-
-	slog.Info("В модели хостера успешно обновлен ник")
+	slog.Info("В модели хостера успешно обновлен ник",
+		slog.Int64("id", room.ID),
+		slog.String("host", host.Name))
 
 	return nil
 }
@@ -548,16 +552,21 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 			Followers: []models.User{},
 			LastSend:  time.Now().Add(-12 * time.Hour),
 		}
-		slog.Debug("Создана модель хостера", slog.Any("host", host))
+		slog.Info("Создана новая модель хостера",
+			slog.String("user", message.Chat.UserName),
+			slog.Int64("id", room.ID),
+			slog.String("host", host.Name))
 	} else {
 		host.Name = room.Hoster
-		slog.Debug("Обновлена модель хостера", slog.Any("host", host))
 	}
 	err = b.rep.SaveHoster(host)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	slog.Info("В модели хостера успешно обновлен ник",
+		slog.Int64("id", room.ID),
+		slog.String("host", host.Name))
 
 	return nil
 }

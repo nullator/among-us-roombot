@@ -241,13 +241,28 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		slog.Error("Ошибка чтения из БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	host.Name = hoster
+	if host == nil {
+		host = &models.Hoster{
+			ID:        message.Chat.ID,
+			Name:      hoster,
+			Followers: []models.User{},
+			LastSend:  time.Now().Add(-12 * time.Hour),
+		}
+		slog.Warn("При обновлении румы не найдена модель хостера, создана новая",
+			slog.String("user", message.Chat.UserName),
+			slog.Int64("id", message.Chat.ID),
+			slog.String("host", host.Name))
+	} else {
+		host.Name = hoster
+	}
 	err = b.rep.SaveHoster(host)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	slog.Info("В модели хостера успешно обновлен ник")
+	slog.Info("В модели хостера успешно обновлен ник",
+		slog.Int64("id", message.Chat.ID),
+		slog.String("host", host.Name))
 
 	return nil
 }

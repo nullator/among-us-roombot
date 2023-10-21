@@ -9,7 +9,7 @@ import (
 )
 
 func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
-	const path = "internals/service/telegram/subscribe.go"
+	const path = "service.telegram.subscribe.handleSubscribe"
 
 	var rooms models.RoomList
 	rooms, err := b.rep.GetRoomList()
@@ -33,7 +33,8 @@ func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 	// })
 
 	kb := make_subscribe_kb(b, message.Chat.ID, rooms)
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Выбери хостера, на которого хочешь подписаться")
+	msg := tgbotapi.NewMessage(message.Chat.ID, "Нажми на кнопку "+
+		"с ником хостера, на которого хочешь подписаться:")
 	msg.ReplyMarkup = kb
 	_, err = b.bot.Send(msg)
 	if err != nil {
@@ -46,7 +47,7 @@ func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 
 func (b *Telegram) subscribe(
 	callback *tgbotapi.CallbackQuery, userID int64, hostID int64) error {
-	const path = "internals/service/telegram/subscribe.go"
+	const path = "service.telegram.subscribe.subscribe"
 
 	// Загрузка модели подписчика из БД
 	user, err := b.rep.GetUser(userID)
@@ -58,7 +59,7 @@ func (b *Telegram) subscribe(
 		slog.Any("user", user))
 	// Если подписчик не найден в БД, создается новый
 	if user == nil {
-		slog.Info("Пользователь не найден в БД, создаю нового",
+		slog.Info("Подписчик не найден в БД, создаю нового",
 			slog.String("user", callback.From.String()),
 			slog.Int64("id", callback.Message.Chat.ID))
 		user = &models.Follower{
@@ -73,6 +74,11 @@ func (b *Telegram) subscribe(
 		slog.Error("Ошибка чтения из БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	if host == nil {
+		slog.Error("Хостер не найден в БД")
+		return fmt.Errorf("%s: %s", path, "хостер не найден в БД")
+	}
+
 	slog.Debug("Хостер успешно загружен из БД",
 		slog.Any("host", host))
 
@@ -118,6 +124,7 @@ func (b *Telegram) subscribe(
 	// Вывод сообщения о подписке
 	msg := tgbotapi.NewMessage(callback.Message.Chat.ID,
 		"Успешно выполнена подписка на "+host.Name)
+	msg.ReplyMarkup = list_kb
 	_, err = b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")

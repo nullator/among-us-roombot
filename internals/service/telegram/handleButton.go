@@ -345,16 +345,15 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 
 	default:
 		cmd := string([]rune(button)[0:3])
-		slog.Debug("Получена команда", slog.String("cmd", cmd))
+		slog.Info("Нажатие на кнопку с параметрами",
+			slog.String("user", update.CallbackQuery.Message.Chat.UserName),
+			slog.Int64("id", update.CallbackQuery.Message.Chat.ID),
+			slog.String("cmd", cmd))
 		switch cmd {
 		case "sub":
 			userID := update.CallbackQuery.Message.Chat.ID
 			hostID_str := string([]rune(button)[3:])
 			hostID, err := strconv.ParseInt(hostID_str, 10, 64)
-
-			slog.Debug("Получены аргументы",
-				slog.Int64("userID", userID),
-				slog.Int64("hostID", hostID))
 			if err != nil {
 				slog.Error("Ошибка парсинга ID хоста",
 					slog.String("error", err.Error()))
