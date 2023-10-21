@@ -155,7 +155,7 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 		return nil
 	} else {
 		post = fmt.Sprintf("Сообщение от **%s**:\n\n%s", host.Name, post)
-		go b.notify(followers, post)
+		go b.notify(followers, host.ID, post)
 		if err != nil {
 			slog.Error("Ошибка отправки сообщения подписчикам")
 			return fmt.Errorf("%s: %w", path, err)
@@ -187,7 +187,7 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 
 }
 
-func (b *Telegram) notify(followers []models.User, post string) {
+func (b *Telegram) notify(followers []models.User, hostID int64, post string) {
 	const path = "service.telegram.notify.notify"
 
 	for _, follower := range followers {
@@ -198,10 +198,24 @@ func (b *Telegram) notify(followers []models.User, post string) {
 			switch err.Error() {
 			case "Forbidden: bot was blocked by the user":
 				slog.Warn("Обнаружена блокировка бота")
-				// TODO Отписка от хостера
+				txt, err := b.unsubscribe(follower.ID, hostID)
+				if err != nil {
+					slog.Warn("Ошибка автоматической отписки от хостера",
+						slog.Int64("hostID", hostID),
+						slog.Int64("userID", follower.ID),
+						slog.String("error", err.Error()),
+						slog.String("txt", txt))
+				}
 			case "Forbidden: user is deactivated":
 				slog.Warn("Пользователь TG удалён")
-				// TODO Отписка от хостера
+				txt, err := b.unsubscribe(follower.ID, hostID)
+				if err != nil {
+					slog.Warn("Ошибка автоматической отписки от хостера",
+						slog.Int64("hostID", hostID),
+						slog.Int64("userID", follower.ID),
+						slog.String("error", err.Error()),
+						slog.String("txt", txt))
+				}
 			default:
 				slog.Error("Ошибка отправки сообщения подписчику",
 					slog.Int64("id", follower.ID),
