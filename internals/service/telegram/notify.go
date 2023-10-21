@@ -58,8 +58,7 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 	}
 
 	delta := time.Now().Unix() - host.LastSend.Unix()
-	// if delta < (60 * 60 * 6) {
-	if delta < (1) {
+	if delta < (60 * 60 * 6) {
 		t := time.Unix(delta, 0)
 		t_str := fmt.Sprintf("%02d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 		msg_text := fmt.Sprintf("Рассылку можно отправлять не чаще чем раз в 6 часов, "+
