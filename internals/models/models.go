@@ -1,7 +1,6 @@
 package models
 
 import (
-	"errors"
 	"time"
 )
 
@@ -35,21 +34,6 @@ type Follower struct {
 	Hosters []User `json:"hosters"`
 }
 
-func (r RoomList) Len() int {
-	return len(r)
+type UserList struct {
+	Users []User `json:"users"`
 }
-
-func (r RoomList) Less(i, j int) bool {
-	return r[i].Time.Before(r[j].Time)
-}
-
-func (r RoomList) Swap(i, j int) {
-	r[i], r[j] = r[j], r[i]
-}
-
-var ErrInvalidNumberArgument = errors.New("invalid number of arguments")
-var ErrInvalidCode = errors.New("invalid code")
-var ErrInvalidName = errors.New("invalid name")
-var ErrInvalidMap = errors.New("invalid map")
-var ErrInvalidMode = errors.New("invalid mode")
-var ErrRoomAlreadyExist = errors.New("room already exist")

@@ -100,11 +100,34 @@ func (b *Telegram) subscribe(
 		Name: host.Name,
 	}
 
+	// Проверка на то, что пользователь уже подписан на хостера
+	var userList models.UserList
+	userList.Users = user.Hosters
+	index := userList.FindUserIndexByID(userList.Users, hostID)
+	if index != -1 {
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID,
+			"Ты уже подписан на этого хостера")
+		msg.ReplyMarkup = list_kb
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+
+		user.Hosters[index].Name = host.Name
+		err = b.rep.SaveUser(user)
+		if err != nil {
+			slog.Error("Ошибка сохранения пользователя в БД после обновления ника хостера")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		return nil
+	}
+
 	// Добавление хостера в список подписок пользователя
 	user.Hosters = append(user.Hosters, newHost)
 	err = b.rep.SaveUser(user)
 	if err != nil {
-		slog.Error("Ошибка сохранения пользователя в БД после добавления подписчика")
+		slog.Error("Ошибка сохранения пользователя в БД после добавления подписки")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
