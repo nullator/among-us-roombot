@@ -392,6 +392,48 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 		}
 
+	case "wait_post":
+		post := update.Message.Text
+		if post == "" {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+				"Текст рассылки не может быть пустым, попробуй ещё раз командой /notify")
+			msg.ReplyMarkup = list_kb
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка отправки сообщения",
+					slog.String("error", err.Error()))
+			}
+			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+			break
+		}
+
+		if len(post) > 1000 {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+				"Пожалей своих подписчиков и не отправляй им текст Войны и мира, "+
+					"попробуй ещё раз с сообщением покороче /notify")
+			msg.ReplyMarkup = list_kb
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка отправки сообщения",
+					slog.String("error", err.Error()))
+			}
+			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+			break
+		}
+
+		err := b.sendPost(update.Message, post)
+		if err != nil {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+				"Произошла ошибка при отправке рассылки")
+			msg.ReplyMarkup = list_kb
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка отправки сообщения",
+					slog.String("error", err.Error()))
+			}
+		}
+		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+
 	default:
 		cmd := string([]rune(status)[0:2])
 		slog.Debug("Получена команда", slog.String("cmd", cmd))

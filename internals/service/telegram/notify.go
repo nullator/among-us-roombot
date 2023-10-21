@@ -15,8 +15,8 @@ import (
 // После этого в модели хостера обновляется поле с временем последней рассылки.
 // После этого модель хостера сохраняется в БД. Хостеру выводится сообщение об
 // успешной рассылке с указанием количества подписчиков.
-func (b *Telegram) handleAlert(message *tgbotapi.Message) error {
-	const path = "service.telegram.alert.handleAlert"
+func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
+	const path = "service.telegram.notufy.handleNotify"
 
 	var host *models.Hoster
 	host, err := b.rep.GetHoster(message.Chat.ID)
@@ -96,14 +96,15 @@ func (b *Telegram) handleAlert(message *tgbotapi.Message) error {
 				tgbotapi.NewInlineKeyboardButtonData("Отменить рассылку", "cancel"),
 			),
 		)
-		draft_post := fmt.Sprintf("Привет\\!\n\nЗаходи ко мне поиграть\\, "+
-			"я играю на карте %s\\, режим %s", room.Map, room.Mode)
-		msg_text := "Пришли мне текст рассылки\\, который будет направлен твоим подписчикам\\, " +
-			"или нажми на кнопку \"Отправить шаблон\"\\, чтобы отправить " +
-			"следующее типовое сообщение \\(рассылку можно делать " +
-			"не чаще чем раз в 6 часов\\)\\:\n\n" + draft_post
+		draft_post := fmt.Sprintf("Привет!\n\nЗаходи ко мне поиграть, "+
+			"я играю на карте %s, режим %s, код:\n\n**%s**", room.Map, room.Mode, room.Code)
+		msg_text := "Пришли мне текст рассылки (только текст, файлы и картинки " +
+			"отправлять не умею), который будет направлен твоим подписчикам, " +
+			"или нажми на кнопку \"Отправить шаблон\", чтобы отправить " +
+			"следующее типовое сообщение (рассылку можно делать " +
+			"не чаще чем раз в 6 часов):\n\n" + draft_post
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
-		msg.ParseMode = "MarkdownV2"
+		msg.ParseMode = "Markdown"
 		msg.ReplyMarkup = kb
 		_, err = b.bot.Send(msg)
 		if err != nil {
@@ -115,5 +116,86 @@ func (b *Telegram) handleAlert(message *tgbotapi.Message) error {
 			slog.String("hoster", host.Name),
 			slog.Int64("id", message.Chat.ID))
 		return nil
+	}
+}
+
+func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
+	const path = "service.telegram.notify.sendPost"
+
+	// Загрузка модели хостера из БД
+	host, err := b.rep.GetHoster(message.Chat.ID)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о хостере")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	if host == nil {
+		slog.Error("Хостер не найден в БД")
+		return fmt.Errorf("%s: %s", path, "хостер не найден в БД")
+	}
+
+	followers := host.Followers
+	if len(followers) == 0 {
+		slog.Info("Хостер попытался отправить рассылку, но у него нет подписчиков",
+			slog.String("hoster", host.Name),
+			slog.Int64("id", message.Chat.ID))
+		return nil
+	} else {
+		post = fmt.Sprintf("Сообщение от **%s**:\n\n%s", host.Name, post)
+		go b.notify(followers, post)
+		if err != nil {
+			slog.Error("Ошибка отправки сообщения подписчикам")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+
+		host.LastSend = time.Now()
+		err = b.rep.SaveHoster(host)
+		if err != nil {
+			slog.Error("Ошибка сохранения модели хостера в БД")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+
+		msg_text := fmt.Sprintf("Рассылка успешно отправлена *%d* подписчикам", len(followers))
+		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
+		msg.ParseMode = "MarkdownV2"
+		msg.ReplyMarkup = list_kb
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		slog.Info("Хостер успешно отправил рассылку",
+			slog.String("hoster", host.Name),
+			slog.Int64("id", message.Chat.ID),
+			slog.Int("followers", len(followers)))
+
+		return nil
+	}
+
+}
+
+func (b *Telegram) notify(followers []models.User, post string) {
+	const path = "service.telegram.notify.notify"
+
+	for _, follower := range followers {
+		msg := tgbotapi.NewMessage(follower.ID, post)
+		msg.ParseMode = "Markdown"
+		_, err := b.bot.Send(msg)
+		if err != nil {
+			switch err.Error() {
+			case "Forbidden: bot was blocked by the user":
+				slog.Warn("Обнаружена блокировка бота")
+				// TODO Отписка от хостера
+			case "Forbidden: user is deactivated":
+				slog.Warn("Пользователь TG удалён")
+			// TODO Отписка от хостера
+			default:
+				slog.Error("Ошибка отправки сообщения подписчику",
+					slog.Int64("id", follower.ID),
+					slog.String("follower", follower.Name),
+					slog.String("error", err.Error()),
+					slog.String("path", path))
+			}
+		}
+		time.Sleep(time.Millisecond * 50)
 	}
 }

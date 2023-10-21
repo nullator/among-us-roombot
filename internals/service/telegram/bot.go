@@ -19,7 +19,7 @@ const (
 	cmdFeedback    = "feedback"
 	cmdSubscribe   = "subscribe"
 	cmdUnsubscribe = "unsubscribe"
-	cmdAlert       = "alert"
+	cmdNotify      = "notify"
 )
 
 type Telegram struct {

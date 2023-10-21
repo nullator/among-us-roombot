@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 
@@ -342,6 +343,62 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			slog.Error("Ошибка вывода списка комнат",
 				slog.String("error", err.Error()))
 		}
+
+	case "send_template":
+		room_code, err := b.rep.GetUserStatus(id, "room")
+
+		if err != nil {
+			slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате",
+				slog.String("error", err.Error()))
+			msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+			msg.ReplyMarkup = list_kb
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка отправки сообщения",
+					slog.String("error", err.Error()))
+			}
+			err = b.rep.SaveUserStatus(id, "status", "null")
+			if err != nil {
+				slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
+					slog.String("error", err.Error()))
+			}
+			break
+		}
+
+		room, err := b.rep.GetRoom(room_code)
+		if err != nil {
+			slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате",
+				slog.String("error", err.Error()))
+			msg := tgbotapi.NewMessage(id, "Произошла ошибка при выполнении команды")
+			msg.ReplyMarkup = list_kb
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка отправки сообщения",
+					slog.String("error", err.Error()))
+			}
+			err = b.rep.SaveUserStatus(id, "status", "null")
+			if err != nil {
+				slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
+					slog.String("error", err.Error()))
+			}
+			break
+		}
+
+		post := fmt.Sprintf("Привет!\n\nЗаходи ко мне поиграть, "+
+			"я играю на карте %s, режим %s, код:\n\n**%s**", room.Map, room.Mode, room.Code)
+
+		err = b.sendPost(update.CallbackQuery.Message, post)
+		if err != nil {
+			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
+				"Произошла ошибка при отправке рассылки")
+			msg.ReplyMarkup = list_kb
+			_, err := b.bot.Send(msg)
+			if err != nil {
+				slog.Error("Ошибка отправки сообщения",
+					slog.String("error", err.Error()))
+			}
+		}
+		b.rep.SaveUserStatus(update.CallbackQuery.Message.Chat.ID, "status", "null")
 
 	default:
 		cmd := string([]rune(button)[0:3])

@@ -30,8 +30,8 @@ func (b *Telegram) handleCommand(message *tgbotapi.Message) error {
 		return b.handleSubscribe(message)
 	case cmdUnsubscribe:
 		return b.handleUnsubscribe(message)
-	case cmdAlert:
-		return b.handleAlert(message)
+	case cmdNotify:
+		return b.handleNotify(message)
 	default:
 		b.handleUnknown(message)
 		return nil
