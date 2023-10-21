@@ -474,8 +474,10 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 						slog.String("error", err.Error()))
 				}
 			} else {
-				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
-					"Успешно выполнена отписка от "+txt)
+				msg_text := fmt.Sprintf("Успешно выполнена отписка от %s\n\n"+
+					"Если хочешь подписаться на других хостов жми /subscribe\n"+
+					"Для отписки жми /unsubscribe", txt)
+				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, msg_text)
 				msg.ReplyMarkup = list_kb
 				_, err := b.bot.Send(msg)
 				if err != nil {

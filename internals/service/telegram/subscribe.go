@@ -157,8 +157,10 @@ func (b *Telegram) subscribe(
 		slog.Int64("follower_id", callback.Message.Chat.ID))
 
 	// Вывод сообщения о подписке
-	msg := tgbotapi.NewMessage(callback.Message.Chat.ID,
-		"Успешно выполнена подписка на "+host.Name)
+	msg_text := fmt.Sprintf("Успешно выполнена подписка на %s\n\n"+
+		"Если хочешь подписаться на других хостов жми /subscribe\n"+
+		"Для отписки жми /unsubscribe", host.Name)
+	msg := tgbotapi.NewMessage(callback.Message.Chat.ID, msg_text)
 	msg.ReplyMarkup = list_kb
 	_, err = b.bot.Send(msg)
 	if err != nil {
