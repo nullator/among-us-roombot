@@ -384,8 +384,8 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			break
 		}
 
-		post := fmt.Sprintf("Привет!\n\nЗаходи ко мне поиграть, "+
-			"я играю на карте %s, режим %s, код:\n\n**%s**", room.Map, room.Mode, room.Code)
+		post := fmt.Sprintf("_Привет!\nЗаходи ко мне поиграть, "+
+			"я играю на карте %s, режим %s, код:_\n\n`%s`", room.Map, room.Mode, room.Code)
 
 		err = b.sendPost(update.CallbackQuery.Message, post)
 		if err != nil {

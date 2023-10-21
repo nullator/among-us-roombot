@@ -9,12 +9,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// Выполняется рассылка сообщения подписчикам. При нажатии на кнопку запрашивается
-// текст сообщения, после этого выполняется запрос к БД, получается список подписчиков,
-// которые подписаны на хостера. Выполняется рассылка в цикле через горутину.
-// После этого в модели хостера обновляется поле с временем последней рассылки.
-// После этого модель хостера сохраняется в БД. Хостеру выводится сообщение об
-// успешной рассылке с указанием количества подписчиков.
 func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 	const path = "service.telegram.notufy.handleNotify"
 
@@ -43,7 +37,8 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 	}
 
 	delta := time.Now().Unix() - host.LastSend.Unix()
-	if delta < (60 * 60 * 6) {
+	// if delta < (60 * 60 * 6) {
+	if delta < (1) {
 		t := time.Unix(delta, 0)
 		t_str := fmt.Sprintf("%02d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
 		msg_text := fmt.Sprintf("Рассылку можно отправлять не чаще чем раз в 6 часов, "+
@@ -68,9 +63,8 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	if room_code == "" {
-		msg_text := "Введи текст рассылки, который будет направлен твоим подписчикам.\n\n" +
-			"Рассылку можно направлять не чаще чам раз в 6 часов, постарайся ей " +
-			"не злоупотреблять, чтобы твои подписчики от тебя не отписались"
+		msg_text := "Пришли мне текст рассылки (файлы и фото отправлять не умею), " +
+			"который будет направлен твоим подписчикам:\n"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ReplyMarkup = cancel_kb
 		_, err := b.bot.Send(msg)
@@ -96,13 +90,12 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 				tgbotapi.NewInlineKeyboardButtonData("Отменить рассылку", "cancel"),
 			),
 		)
-		draft_post := fmt.Sprintf("Привет!\n\nЗаходи ко мне поиграть, "+
-			"я играю на карте %s, режим %s, код:\n\n**%s**", room.Map, room.Mode, room.Code)
-		msg_text := "Пришли мне текст рассылки (только текст, файлы и картинки " +
-			"отправлять не умею), который будет направлен твоим подписчикам, " +
-			"или нажми на кнопку \"Отправить шаблон\", чтобы отправить " +
-			"следующее типовое сообщение (рассылку можно делать " +
-			"не чаще чем раз в 6 часов):\n\n" + draft_post
+		draft_post := fmt.Sprintf("_Привет!\nЗаходи ко мне поиграть, "+
+			"я играю на карте %s, режим %s, код:_\n\n`%s`", room.Map, room.Mode, room.Code)
+		msg_text := "Пришли мне текст рассылки (файлы и фото отправлять не умею), " +
+			"который будет направлен твоим подписчикам,\n" +
+			"*или* нажми на кнопку \"**Отправить шаблон**\", чтобы отправить " +
+			"следующее сообщение:\n\n--------------------------------------------------\n" + draft_post
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ParseMode = "Markdown"
 		msg.ReplyMarkup = kb
@@ -187,7 +180,7 @@ func (b *Telegram) notify(followers []models.User, post string) {
 				// TODO Отписка от хостера
 			case "Forbidden: user is deactivated":
 				slog.Warn("Пользователь TG удалён")
-			// TODO Отписка от хостера
+				// TODO Отписка от хостера
 			default:
 				slog.Error("Ошибка отправки сообщения подписчику",
 					slog.Int64("id", follower.ID),

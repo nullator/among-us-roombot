@@ -32,6 +32,18 @@ func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 	// 	Mode:   "Прятки",
 	// })
 
+	if len(rooms) == 0 {
+		msg := tgbotapi.NewMessage(message.Chat.ID, "Сейчас нет активных хостеров, "+
+			"не на кого подписываться")
+		msg.ReplyMarkup = list_kb
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		return nil
+	}
+
 	kb := make_subscribe_kb(b, message.Chat.ID, rooms)
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Нажми на кнопку "+
 		"с ником хостера, на которого хочешь подписаться:")
