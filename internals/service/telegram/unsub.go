@@ -9,13 +9,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// Выполняется запрос к БД, получается список хостеров на которых подписан пользователь,
-// генерируются кнопки с никами. При нажатии на кнопку - отписка от хостера:
-// из БД загружается модель юзера в которой есть поле Hosters []User.
-// Из этого поля удаляется хостер. После этого модель юзера сохраняется в БД.
-// Из БД загружается модель хостера, в которой есть поле Followers []User.
-// Из этого поля удаляется подписчик. После этого модель хостера сохраняется в БД.
-// Выводится сообщение об отписке.
 func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 	const path = "service.telegram.unsubscribe.handleUnsubscribe"
 
@@ -42,6 +35,35 @@ func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 	kb := make_unsubscribe_kb(b, user.Hosters)
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Нажми на кнопку "+
 		"с ником хостера, от которого хочешь отписаться:")
+	msg.ReplyMarkup = kb
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		slog.Error("error send message to user")
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	return nil
+}
+
+func (b *Telegram) areYouShure(userID int64, hostID int64) error {
+	const path = "service.telegram.unsubscribe.areYouShure"
+
+	host, err := b.rep.GetHoster(hostID)
+	if err != nil {
+		slog.Error("Ошибка чтения из БД данных о хостере",
+			slog.Int64("user_id", userID),
+			slog.Int64("host_id", hostID),
+			slog.String("path", path))
+		return fmt.Errorf("%s: %w", path, err)
+	}
+
+	kb := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Да", fmt.Sprintf("uns%d", hostID)),
+			tgbotapi.NewInlineKeyboardButtonData("Нет", "cancel"),
+		),
+	)
+	msg := tgbotapi.NewMessage(userID, "Ты точно хочешь отписаться от "+host.Name+"?")
 	msg.ReplyMarkup = kb
 	_, err = b.bot.Send(msg)
 	if err != nil {

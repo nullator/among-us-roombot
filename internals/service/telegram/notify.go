@@ -154,7 +154,8 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 			slog.Int64("id", message.Chat.ID))
 		return nil
 	} else {
-		post = fmt.Sprintf("Сообщение от **%s**:\n\n%s", host.Name, post)
+		post = fmt.Sprintf("*%s* отправил сообщение:\n\n"+
+			"--------------------------------------------------\n%s", host.Name, post)
 		go b.notify(followers, host.ID, post)
 		if err != nil {
 			slog.Error("Ошибка отправки сообщения подписчикам")
@@ -170,7 +171,7 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 
 		msg_text := fmt.Sprintf("Рассылка успешно отправлена *%d* подписчикам", len(followers))
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
-		msg.ParseMode = "MarkdownV2"
+		msg.ParseMode = "Markdown"
 		msg.ReplyMarkup = list_kb
 		_, err = b.bot.Send(msg)
 		if err != nil {

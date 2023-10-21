@@ -430,6 +430,29 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 				}
 			}
 
+		case "ays":
+			userID := update.CallbackQuery.Message.Chat.ID
+			hostID_str := string([]rune(button)[3:])
+			hostID, err := strconv.ParseInt(hostID_str, 10, 64)
+			if err != nil {
+				slog.Error("Ошибка парсинга ID хоста",
+					slog.String("error", err.Error()))
+				return
+			}
+			err = b.areYouShure(userID, hostID)
+			if err != nil {
+				slog.Error("Ошибка подтверждения удаления комнаты",
+					slog.String("error", err.Error()))
+				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
+					"Произошла ошибка при попытке отписаться от хостера")
+				msg.ReplyMarkup = list_kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+			}
+
 		case "uns":
 			userID := update.CallbackQuery.Message.Chat.ID
 			hostID_str := string([]rune(button)[3:])

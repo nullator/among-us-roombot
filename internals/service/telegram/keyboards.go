@@ -46,8 +46,8 @@ func make_unsubscribe_kb(b *Telegram, hosters []models.User) tgbotapi.InlineKeyb
 	n := len(hosters) / 2
 	for n > 0 {
 		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(hosters[i].Name, fmt.Sprintf("uns%d", hosters[i].ID)),
-			tgbotapi.NewInlineKeyboardButtonData(hosters[i+1].Name, fmt.Sprintf("uns%d", hosters[i+1].ID)),
+			tgbotapi.NewInlineKeyboardButtonData(hosters[i].Name, fmt.Sprintf("ays%d", hosters[i].ID)),
+			tgbotapi.NewInlineKeyboardButtonData(hosters[i+1].Name, fmt.Sprintf("ays%d", hosters[i+1].ID)),
 		),
 		)
 		i += 2
@@ -56,7 +56,7 @@ func make_unsubscribe_kb(b *Telegram, hosters []models.User) tgbotapi.InlineKeyb
 
 	if len(hosters)%2 == 1 {
 		numericKeyboard.InlineKeyboard = append(numericKeyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(hosters[len(hosters)-1].Name, fmt.Sprintf("uns%d", hosters[len(hosters)-1].ID)),
+			tgbotapi.NewInlineKeyboardButtonData(hosters[len(hosters)-1].Name, fmt.Sprintf("ays%d", hosters[len(hosters)-1].ID)),
 		),
 		)
 	}
