@@ -21,7 +21,7 @@ func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 			slog.String("path", path))
 	}
 
-	if len(user.Hosters) == 0 {
+	if user == nil || len(user.Hosters) == 0 {
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Ты ни на кого не подписан")
 		msg.ReplyMarkup = list_kb
 		_, err = b.bot.Send(msg)
