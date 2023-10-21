@@ -429,6 +429,37 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 						slog.String("error", err.Error()))
 				}
 			}
+
+		case "uns":
+			userID := update.CallbackQuery.Message.Chat.ID
+			hostID_str := string([]rune(button)[3:])
+			hostID, err := strconv.ParseInt(hostID_str, 10, 64)
+			if err != nil {
+				slog.Error("Ошибка парсинга ID хоста",
+					slog.String("error", err.Error()))
+				return
+			}
+			txt, err := b.unsubscribe(userID, hostID)
+			if err != nil {
+				slog.Error("Ошибка отписки",
+					slog.String("error", err.Error()))
+				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, txt)
+				msg.ReplyMarkup = list_kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+			} else {
+				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
+					"Успешно выполнена отписка от "+txt)
+				msg.ReplyMarkup = list_kb
+				_, err := b.bot.Send(msg)
+				if err != nil {
+					slog.Error("Ошибка отправки сообщения",
+						slog.String("error", err.Error()))
+				}
+			}
 		}
 	}
 }
