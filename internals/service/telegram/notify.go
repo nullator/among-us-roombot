@@ -36,6 +36,20 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	if len(host.Followers) == 0 {
+		msg := tgbotapi.NewMessage(message.Chat.ID, "У тебя нет подписчиков 😢")
+		msg.ReplyMarkup = list_kb
+		_, err := b.bot.Send(msg)
+		if err != nil {
+			slog.Error("error send message to user")
+			return fmt.Errorf("%s: %w", path, err)
+		}
+		slog.Info("Попытка отправить рассылку пользователем у которого нет подписчиков",
+			slog.String("user", message.From.String()),
+			slog.Int64("id", message.Chat.ID))
+		return nil
+	}
+
 	delta := time.Now().Unix() - host.LastSend.Unix()
 	// if delta < (60 * 60 * 6) {
 	if delta < (1) {
@@ -128,7 +142,7 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 
 	followers := host.Followers
 	if len(followers) == 0 {
-		slog.Info("Хостер попытался отправить рассылку, но у него нет подписчиков",
+		slog.Warn("Хостер попытался отправить рассылку, но у него нет подписчиков",
 			slog.String("hoster", host.Name),
 			slog.Int64("id", message.Chat.ID))
 		return nil
