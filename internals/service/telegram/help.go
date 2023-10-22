@@ -10,7 +10,7 @@ import (
 func (b *Telegram) handleHelp(message *tgbotapi.Message) error {
 	const path = "service.telegram.help"
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Список команд:\n"+
+	msg := tgbotapi.NewMessage(message.Chat.ID, "*Список команд:*\n\n"+
 		"/add - добавить комнату\n"+
 		"Возможно ввести паматеры в формате \"/add ABCDEF никнейм карта описание\"\n"+
 		"или ввести команду без параметров и указать данные пошагово\n\n"+
@@ -30,6 +30,7 @@ func (b *Telegram) handleHelp(message *tgbotapi.Message) error {
 		"/feedback - обратная связь с разработчиком\n"+
 		"Можно отправить сообщение разработчику, к сообщению можно приложить файлы")
 	msg.ReplyMarkup = list_kb
+	msg.ParseMode = "Markdown"
 	_, err := b.bot.Send(msg)
 	if err != nil {
 		slog.Error("error send message to user")
