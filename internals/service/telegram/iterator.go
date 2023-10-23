@@ -32,8 +32,6 @@ func (b *Telegram) checkRooms() error {
 	for _, room := range rooms {
 		// Проверка на предупреждения
 		if time.Now().After(room.Time.Add(time.Minute * 240)) {
-			slog.Debug("Комната устарела, но пока не удаляется",
-				slog.String("room", room.Code))
 
 			// Отправить предупреждение
 			if !room.Warning {
@@ -61,13 +59,13 @@ func (b *Telegram) checkRooms() error {
 				}
 				room.Warning = true
 				err = b.rep.SaveRoom(&room)
+				slog.Info("Пользователю отправлено предупреждение",
+					slog.String("user", room.Hoster),
+					slog.Int64("id", room.ID),
+					slog.String("room", room.Code))
 				if err != nil {
 					slog.Error("Ошибка сохранения в БД данных о предупреждении",
 						slog.String("error", err.Error()))
-					slog.Info("Пользователю отправлено предупреждение",
-						slog.String("user", room.Hoster),
-						slog.Int64("id", room.ID),
-						slog.String("room", room.Code))
 				}
 			}
 		}
