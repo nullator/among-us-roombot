@@ -180,6 +180,7 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 		slog.Info("Хостер успешно отправил рассылку",
 			slog.String("hoster", host.Name),
 			slog.Int64("id", message.Chat.ID),
+			slog.String("post", post),
 			slog.Int("followers", len(followers)))
 
 		return nil
