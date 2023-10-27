@@ -52,8 +52,28 @@ func (b *Telegram) checkRooms() error {
 				msg.ParseMode = "MarkdownV2"
 				_, err = b.bot.Send(msg)
 				if err != nil {
-					slog.Error("error send message to user")
-					return fmt.Errorf("%s: %w", path, err)
+					if err.Error() == "Forbidden: bot was blocked by the user" {
+						slog.Warn("Обнаружена блокировка бота")
+						err := b.rep.DeleteRoom(room.Code)
+						if err != nil {
+							slog.Error("Ошибка удаления устаревшей комнаты из БД",
+								slog.String("error", err.Error()))
+							return fmt.Errorf("%s: %w", path, err)
+						}
+						err = b.rep.SaveUserStatus(room.ID, "room", "")
+						if err != nil {
+							slog.Error("Ошибка сохранения в БД данных о комнате",
+								slog.String("error", err.Error()))
+							return fmt.Errorf("%s: %w", path, err)
+						}
+						slog.Info("Устаревшая комната автоматически удалена (бот заблокирован)",
+							slog.String("code", room.Code),
+							slog.String("user", room.Hoster),
+							slog.Int64("id", room.ID))
+					} else {
+						slog.Error("error send message to user")
+						return fmt.Errorf("%s: %w", path, err)
+					}
 				}
 				room.Warning = true
 				err = b.rep.SaveRoom(&room)
