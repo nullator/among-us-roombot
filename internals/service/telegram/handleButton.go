@@ -343,6 +343,13 @@ func (b *Telegram) handleButton(update *tgbotapi.Update, button string, id int64
 			slog.Error("Ошибка вывода списка комнат",
 				slog.String("error", err.Error()))
 		}
+		// callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Держи список комнат")
+		// callback.ShowAlert = true
+		// _, err = b.bot.Send(callback)
+		// if err != nil {
+		// 	slog.Error("Ошибка отправки alert",
+		// 		slog.String("error", err.Error()))
+		// }
 
 	case "send_template":
 		room_code, err := b.rep.GetUserStatus(id, "room")
