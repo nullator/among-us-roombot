@@ -87,17 +87,14 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 
 		indent = strings.Repeat(" ", 9)
 		msgText += fmt.Sprintf("`%s`    ╭  %s %-10s\n", indent, emoji_map, room.Map)
-		msgText += fmt.Sprintf("*%d\\. *`%-6s`       \\-   👑   *%-10s*\n", i, room.Code, room.Hoster)
+		msgText += fmt.Sprintf("%d. `%-6s`       -   👑   *%-10s*\n", i, room.Code, room.Hoster)
 		msgText += fmt.Sprintf("`%s`    ╰  %s %-10s\n\n", indent, emoji_mode, room.Mode)
 		i++
 	}
 
-	msgText += "\n"
-	msgText += "||Если копировать, то полностью 😊||"
-
 	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 	msg.ReplyMarkup = list_kb
-	msg.ParseMode = "MarkdownV2"
+	msg.ParseMode = "Markdown"
 
 	_, err = b.bot.Send(msg)
 	if err != nil {
