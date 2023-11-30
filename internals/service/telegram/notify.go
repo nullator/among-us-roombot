@@ -225,7 +225,7 @@ func (b *Telegram) notify(followers []models.User, hostID int64, post string) {
 					slog.String("path", path))
 			}
 		}
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 200)
 	}
 }
 

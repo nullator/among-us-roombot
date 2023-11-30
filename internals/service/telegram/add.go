@@ -39,7 +39,6 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 	var room *models.Room
 	arg := message.CommandArguments()
-	slog.Debug("Получены аргументы команды add: %s", arg)
 
 	if arg == "" { // Если аргументы не переданы, запускаем пошаговый цикл создания комнаты
 		// Изменить статус пользователя
@@ -188,7 +187,6 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		if room != nil {
 			room.ID = message.Chat.ID
 		}
-		slog.Debug("Получены валидные аргументы команды add: %s", room)
 	}
 
 	if room == nil {
@@ -408,7 +406,6 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 
 	// Скорректировать ник
 	room.Hoster = name
-	slog.Debug("Получен никнейм хостера: %s", name)
 
 	// Сохранить скорректированную комнату в базу данных
 	err = b.rep.SaveDraftRoom(room)

@@ -14,7 +14,6 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 	const path = "service.telegram.delete.handleDel"
 
 	arg := message.CommandArguments()
-	slog.Debug("Получены аргументы команды del: %s", arg)
 	if arg != "" {
 		match, _ := regexp.MatchString("^[a-zA-Z]{6}$", arg)
 		if !match {
