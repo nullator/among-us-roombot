@@ -12,9 +12,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// handleAdd обрабатывает команду /add
 func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	const path = "service.telegram.add"
 
+	// Проверка наличия существующей комнаты у пользователя
 	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
@@ -34,14 +36,20 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		slog.Info("Пользователь попытался создать вторую комнату",
 			slog.String("user", message.From.String()),
 			slog.Int64("id", message.Chat.ID))
+
 		return nil
 	}
 
+	// Если существующей комнаты нет, то создается её модель
+	// arg - аргументы команды /add
 	var room *models.Room
 	arg := message.CommandArguments()
 
 	if arg == "" { // Если аргументы не переданы, запускаем пошаговый цикл создания комнаты
-		// Изменить статус пользователя
+		// Изменить статус пользователя на "start_add_room"
+		// Пользователю отправляется сообщение с просьбой ввести код комнаты
+		// В дальнейшем сообщение с кодом будет обработано в handleUpdate
+		// где будет зафиксирован и обработан в handleStatus статус "start_add_room"
 		slog.Info("Пользователь начал пошаговое создание комнаты",
 			slog.String("user", message.From.String()),
 			slog.Int64("id", message.Chat.ID))
@@ -61,12 +69,15 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 
 	} else { // Если аргументы переданы, то разбиваем их на отдельные значения
 		values := strings.Split(arg, " ")
+		// Проверка на валидность аргументов
 		room, err = b.validateValues(values)
 		slog.Info("Пользователь ввел аргументы команды add",
 			slog.String("user", message.From.String()),
 			slog.Int64("id", message.Chat.ID),
 			slog.String("values", arg))
 		if err != nil {
+			// validateValues возвращает ошибку, если аргументы невалидны
+			// В зависимости от типа ошибки отправляется соответствующее сообщение
 			switch err {
 			case models.ErrInvalidNumberArgument:
 				msg_text := "Неверный формат команды.\n" +
@@ -189,11 +200,14 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		}
 	}
 
+	// По идее в данном месте room никогда не может быть = nil
+	// Но на всякий случай проверяем чтобы не допустить ошибки сохранения в БД
 	if room == nil {
 		slog.Error("Сформирована пустая модель комнаты")
 		return fmt.Errorf("%s: %w", path, fmt.Errorf("room is nil"))
 	}
 
+	// Сохранение комнаты в БД и возвращение сообщения пользователю
 	err = b.rep.SaveRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
@@ -217,6 +231,8 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		slog.String("map", room.Map),
 		slog.String("mode", room.Mode))
 
+	// Сохранение статуса "room" пользователя в БД
+	// в статусе указан код комнаты
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", room.Code)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о созданной пользователем комнате")
@@ -229,6 +245,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 		slog.Error("Ошибка чтения из БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	// Если модель хостера не найдена, то создается новая
 	if host == nil {
 		host = &models.Hoster{
 			ID:        message.Chat.ID,
@@ -241,9 +258,12 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 			slog.Int64("id", room.ID),
 			slog.String("host", host.Name))
 	} else {
+		// Если модель хостера найдена, то обновляется ник на актуальный
+		// другие данные сейчас обновлять не требуется
 		host.Name = room.Hoster
 	}
 
+	// Сохранение модели хостера в БД
 	err = b.rep.SaveHoster(host)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о хостере")
@@ -256,6 +276,7 @@ func (b *Telegram) handleAdd(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Валидация аргументов команды /add
 func (b *Telegram) validateValues(values []string) (*models.Room, error) {
 	path := "service.telegram.validateValues"
 
@@ -321,6 +342,8 @@ func (b *Telegram) validateValues(values []string) (*models.Room, error) {
 	return &room, nil
 }
 
+// Функция обрабатывает сообщения с кодом комнаты при пошаговом создании комнаты
+// на первом этапе обрабатывается код комнаты, который должен содержаться в message.Text
 func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	const path = "service.telegram.addDraftRoom"
 
@@ -353,6 +376,8 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 		}
 	}
 
+	// Создание черновика комнаты
+	// часть полей заполняется пустыми значениями, они будут получены позднее
 	room := models.Room{
 		Code:       code,
 		Mode:       "",
@@ -363,12 +388,16 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 		ID:         message.Chat.ID,
 		Warning:    false,
 	}
+
+	// Сохранение черновика комнаты в БД
 	room.Code = code
 	err = b.rep.SaveDraftRoom(&room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+
+	// По аналогии со статусом "room" сохраняется статус "draft_room"
 	err = b.rep.SaveUserStatus(message.Chat.ID, "draft_room", room.Code)
 
 	slog.Info("Пользователь успешно создал черновик комнаты",
@@ -377,6 +406,8 @@ func (b *Telegram) addDraftRoom(message *tgbotapi.Message) error {
 	return err
 }
 
+// Второй этап пошагового создания комнаты
+// В сообщении message.Text должен содержаться ник хостера
 func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 	const path = "service.telegram.addHostName"
 
@@ -390,13 +421,14 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 		return models.ErrInvalidName
 	}
 
-	// Загрузить комнату из базы данных
+	// Загрузить код черновика комнаты из статуса "draft_room"
 	draft_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "draft_room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода создаваемой комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить черновик комнаты из БД
 	var room *models.Room
 	room, err = b.rep.GetDraftRoom(draft_room_code)
 	if err != nil {
@@ -404,7 +436,7 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// Скорректировать ник
+	// Скорректировать в черновике комнаты ник хостера
 	room.Hoster = name
 
 	// Сохранить скорректированную комнату в базу данных
@@ -422,6 +454,8 @@ func (b *Telegram) addHostName(message *tgbotapi.Message, name string) error {
 
 }
 
+// Третий этап пошагового создания комнаты
+// В сообщении message.Text должно содержаться название карты
 func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 	const path = "service.telegram.addMapName"
 
@@ -435,13 +469,14 @@ func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 		return models.ErrInvalidMap
 	}
 
-	// Загрузить комнату из базы данных
+	// Загрузить код черновика комнаты из статуса "draft_room"
 	draft_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "draft_room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода создаваемой комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить черновик комнаты из БД
 	var room *models.Room
 	room, err = b.rep.GetDraftRoom(draft_room_code)
 	if err != nil {
@@ -466,6 +501,8 @@ func (b *Telegram) addMapName(message *tgbotapi.Message, mapa string) error {
 	return nil
 }
 
+// Четвертый этап пошагового создания комнаты
+// В сообщении message.Text должно содержаться описание режима игры
 func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 	const path = "service.telegram.addGameMode"
 
@@ -479,13 +516,14 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 		return models.ErrInvalidMode
 	}
 
-	// Загрузить комнату из базы данных
+	// Загрузить код черновика комнаты из статуса "draft_room"
 	draft_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "draft_room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода создаваемой комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить черновик комнаты из БД
 	var room *models.Room
 	room, err = b.rep.GetDraftRoom(draft_room_code)
 	if err != nil {
@@ -498,30 +536,36 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 	room.Time = time.Now()
 
 	// Сохранить комнату в базу данных
+	// Учитывая, что все параметры черновика комнаты сформированы, комната сохраняется
+	// в таблицу rooms, а черновик удаляется
 	err = b.rep.SaveRoom(room)
 	if err != nil {
 		slog.Error("Ошибка добавления комнаты в БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Сохранить статус "room" пользователя в БД с кодом комнаты
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", room.Code)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД статуса о созданной пользователем комнате")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Обнулить статус "draft_room" пользователя из БД
 	err = b.rep.SaveUserStatus(message.Chat.ID, "draft_room", "")
 	if err != nil {
 		slog.Error("Ошибка удаления из БД статуса о черновике комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Удалить черновик комнаты из БД
 	err = b.rep.DeleteDraftRoom(draft_room_code)
 	if err != nil {
 		slog.Error("Ошибка удаления комнаты из БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Сохранить ник хостера в статусе "host_name"
 	err = b.rep.SaveUserStatus(message.Chat.ID, "host_name", room.Hoster)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД никнейма хостера")
@@ -542,6 +586,7 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 		slog.Error("Ошибка чтения из БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	// Если модель хостера не найдена, то создается новая
 	if host == nil {
 		host = &models.Hoster{
 			ID:        message.Chat.ID,
@@ -556,6 +601,7 @@ func (b *Telegram) addGameMode(message *tgbotapi.Message, mode string) error {
 	} else {
 		host.Name = room.Hoster
 	}
+
 	err = b.rep.SaveHoster(host)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о хостере")

@@ -10,9 +10,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Функция рассылки сообщений подписчикам
 func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 	const path = "service.telegram.notufy.handleNotify"
 
+	// Загрузка модели хостера из БД
 	var host *models.Hoster
 	host, err := b.rep.GetHoster(message.Chat.ID)
 	if err != nil {
@@ -20,6 +22,7 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Проверка наличия модели хостера в БД, если её нет, то пользователь никогда не хостил
 	if host == nil {
 		msg_text := "Не удлось выполнить команду рассылки.\n\n" +
 			"Скорее всего ты никогда не хостил руму, поэтому у тебя не может " +
@@ -37,6 +40,7 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Проверка наличия подписчиков у хостера, если их нет, то рассылка не имеет смысла
 	if len(host.Followers) == 0 {
 		err = sendImage(b, message.Chat.ID, "notify.png")
 		if err != nil {
@@ -57,6 +61,7 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Проверка времени предыдущей рассылки, запрещено направлять рассылку чаще чем раз в 6 часов
 	delta := time.Now().Unix() - host.LastSend.Unix()
 	if delta < (60 * 60 * 6) {
 		t := time.Unix((60*60*6)-delta, 0)
@@ -77,11 +82,13 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Проверка наличия активной комнаты у хостера
 	room_code, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	// Если активной румы нет, то просим направить текст рассылки в свободной форме
 	if room_code == "" {
 		msg_text := "Пришли мне текст рассылки (файлы и фото отправлять не умею), " +
 			"который будет направлен твоим подписчикам:\n"
@@ -99,6 +106,7 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return nil
 
 	} else {
+		// Если активная рума есть, то формируется типовой текст рассылки
 		room, err := b.rep.GetRoom(room_code)
 		if err != nil {
 			slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
@@ -132,6 +140,8 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 	}
 }
 
+// Функция выполняет рассылку сообщения подписчикам
+// post - текст рассылки
 func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 	const path = "service.telegram.notify.sendPost"
 
@@ -146,6 +156,7 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 		return fmt.Errorf("%s: %s", path, "хостер не найден в БД")
 	}
 
+	// Подписчики хостера
 	followers := host.Followers
 	if len(followers) == 0 {
 		slog.Warn("Хостер попытался отправить рассылку, но у него нет подписчиков",
@@ -155,12 +166,16 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 	} else {
 		post = fmt.Sprintf("*%s* отправил сообщение:\n\n"+
 			"--------------------------------------------------\n%s", host.Name, post)
+
+		// В отдельной горутине запускается функция рассылки сообщений
+		// чтобы не блокировать работу бота
 		go b.notify(followers, host.ID, post)
 		if err != nil {
 			slog.Error("Ошибка отправки сообщения подписчикам")
 			return fmt.Errorf("%s: %w", path, err)
 		}
 
+		// Обновление времени последней рассылки
 		host.LastSend = time.Now()
 		err = b.rep.SaveHoster(host)
 		if err != nil {
@@ -188,6 +203,10 @@ func (b *Telegram) sendPost(message *tgbotapi.Message, post string) error {
 
 }
 
+// Функция рассылает сообщение подписчикам
+// followers - список подписчиков в формате []models.User
+// hostID - ID хостера
+// post - текст рассылки
 func (b *Telegram) notify(followers []models.User, hostID int64, post string) {
 	const path = "service.telegram.notify.notify"
 
@@ -225,10 +244,14 @@ func (b *Telegram) notify(followers []models.User, hostID int64, post string) {
 					slog.String("path", path))
 			}
 		}
-		time.Sleep(time.Millisecond * 200)
+		// Задержка между отправкой сообщений для избежания блокировки бота
+		time.Sleep(time.Millisecond * 300)
 	}
 }
 
+// Функция отправляет картинку пользователю
+// imagePath - путь к картинке
+// chatID - ID пользователя
 func sendImage(b *Telegram, chatID int64, imagePath string) error {
 	// Открываем файл с картинкой
 	file, err := os.Open(imagePath)

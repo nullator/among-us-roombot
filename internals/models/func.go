@@ -9,6 +9,7 @@ func (u UserList) FindUserIndexByID(users []User, id int64) int {
 	return -1
 }
 
+// RoomList implements sort.Interface for []Room based on
 func (r RoomList) Len() int {
 	return len(r)
 }

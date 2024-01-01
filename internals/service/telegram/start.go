@@ -7,6 +7,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Обработка команды /start
 func (b *Telegram) handleStart(message *tgbotapi.Message) error {
 	const path = "service.telegram.start"
 

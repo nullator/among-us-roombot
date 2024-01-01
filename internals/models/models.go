@@ -15,6 +15,7 @@ type Room struct {
 	Warning    bool      `json:"status"`
 }
 
+// RoomList implements sort.Interface for []Room based on
 type RoomList []Room
 
 type User struct {

@@ -8,9 +8,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Обработка команды /subscribe
 func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 	const path = "service.telegram.subscribe.handleSubscribe"
 
+	// Из БД загружается список активных комнат
 	var rooms models.RoomList
 	rooms, err := b.rep.GetRoomList()
 	if err != nil {
@@ -18,20 +20,7 @@ func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// rooms = append(rooms, models.Room{
-	// 	Code:   "AAAAAA",
-	// 	Hoster: "hoster1",
-	// 	Map:    "Skeld",
-	// 	Mode:   "Классика",
-	// })
-
-	// rooms = append(rooms, models.Room{
-	// 	Code:   "BBBBBB",
-	// 	Hoster: "hoster2",
-	// 	Map:    "Polus",
-	// 	Mode:   "Прятки",
-	// })
-
+	// Если список комнат пуст, то пользователь не может подписаться на хостера
 	if len(rooms) == 0 {
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Сейчас нет активных хостеров, "+
 			"не на кого подписываться")
@@ -44,6 +33,7 @@ func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Создание клавиатуры с кнопками для подписки
 	kb := make_subscribe_kb(b, message.Chat.ID, rooms)
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Нажми на кнопку "+
 		"с ником хостера, на которого хочешь подписаться:")
@@ -57,6 +47,9 @@ func (b *Telegram) handleSubscribe(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Подписка на хостера
+// userID - ID пользователя который выполняет подписку
+// hostID - ID хостера
 func (b *Telegram) subscribe(
 	callback *tgbotapi.CallbackQuery, userID int64, hostID int64) error {
 	const path = "service.telegram.subscribe.subscribe"
@@ -67,8 +60,6 @@ func (b *Telegram) subscribe(
 		slog.Error("Ошибка чтения из БД данных о пользователе")
 		return fmt.Errorf("%s: %w", path, err)
 	}
-	slog.Debug("Пользователь успешно загружен из БД",
-		slog.Any("user", user))
 	// Если подписчик не найден в БД, создается новый
 	if user == nil {
 		slog.Info("Подписчик не найден в БД, создаю нового",
@@ -91,9 +82,6 @@ func (b *Telegram) subscribe(
 		return fmt.Errorf("%s: %s", path, "хостер не найден в БД")
 	}
 
-	slog.Debug("Хостер успешно загружен из БД",
-		slog.Any("host", host))
-
 	// Создание модели на основе модели хостера
 	newHost := models.User{
 		ID:   hostID,
@@ -105,6 +93,7 @@ func (b *Telegram) subscribe(
 	userList.Users = user.Hosters
 	index := userList.FindUserIndexByID(userList.Users, hostID)
 	if index != -1 {
+		// TODO: скорректировать сообщение и уведомлять о том что в БД будет изменён ник хостера
 		msg := tgbotapi.NewMessage(callback.Message.Chat.ID,
 			"Ты уже подписан на этого хостера")
 		msg.ReplyMarkup = list_kb
@@ -114,6 +103,7 @@ func (b *Telegram) subscribe(
 			return fmt.Errorf("%s: %w", path, err)
 		}
 
+		// Если пользователь уже подписан на хостера, в модели подписчика меняется ник хостера
 		user.Hosters[index].Name = host.Name
 		err = b.rep.SaveUser(user)
 		if err != nil {

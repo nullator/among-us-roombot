@@ -12,9 +12,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Функция обработки команды /edit
 func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 	const path = "service.telegram.edit.handleEdit"
 
+	// Проверка наличия у пользователя активной комнаты
 	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
@@ -36,6 +38,8 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Если комната есть, то запускаем диалог изменения
+	// Создается клавиатура с кнопками для выбора изменяемого параметра
 	var kb = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Код", "change_code"),
@@ -65,6 +69,7 @@ func (b *Telegram) handleEdit(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Функция изменения кода комнаты, новый код в сообщении message.Text
 func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	const path = "service.telegram.edit.changeCode"
 
@@ -97,13 +102,14 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 		}
 	}
 
-	// Загрузить старую комнату из базы данных
+	// Получить код существующей комнаты пользователя
 	old_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода существующей комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить существующую комнату из базы данных
 	var old_room *models.Room
 	old_room, err = b.rep.GetRoom(old_room_code)
 	if err != nil {
@@ -111,12 +117,15 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// Скорректировать код
+	// Скорректировать код, а также сбросить время создания на текущее время
+	// и сбросить флаг предупреждения о том что комната создана слишком давно
 	old_room.Code = code
 	old_room.Time = time.Now()
 	old_room.Warning = false
 
 	// Удалить старую комнату из базы данных
+	// Скорее всего это избыточно, можно просто сохранить скорректированную комнату
+	// TODO: проверить, что будет, если не удалять старую комнату
 	err = b.rep.DeleteRoom(old_room_code)
 	if err != nil {
 		slog.Error("Ошибка удаления комнаты из БД")
@@ -134,6 +143,7 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 		slog.Int64("id", message.Chat.ID),
 		slog.String("new_code", old_room_code))
 
+	// Скорректированный код требуется сохранить в статус пользователя
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", code)
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о новом коде комнаты")
@@ -143,6 +153,7 @@ func (b *Telegram) changeCode(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Функция изменения карты комнаты, новая карта в сообщении message.Text
 func (b *Telegram) changeMap(message *tgbotapi.Message, mapa string) error {
 	const path = "service.telegram.edit.changeMap"
 
@@ -155,13 +166,14 @@ func (b *Telegram) changeMap(message *tgbotapi.Message, mapa string) error {
 		return models.ErrInvalidMap
 	}
 
-	// Загрузить старую комнату из базы данных
+	// Загрузить код существующей комнаты пользователя
 	old_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода существующей комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить существующую комнату из базы данных
 	var old_room *models.Room
 	old_room, err = b.rep.GetRoom(old_room_code)
 	if err != nil {
@@ -169,6 +181,8 @@ func (b *Telegram) changeMap(message *tgbotapi.Message, mapa string) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Скорректировать карту, а также сбросить время создания на текущее время
+	// и сбросить флаг предупреждения о том что комната создана слишком давно
 	old_room.Map = mapa
 	old_room.Time = time.Now()
 	old_room.Warning = false
@@ -188,6 +202,7 @@ func (b *Telegram) changeMap(message *tgbotapi.Message, mapa string) error {
 	return nil
 }
 
+// Функция изменения ника хоста комнаты, новый ник в сообщении message.Text
 func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	const path = "service.telegram.edit.changeHoster"
 
@@ -201,13 +216,14 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		return models.ErrInvalidName
 	}
 
-	// Загрузить старую комнату из базы данных
+	// Загрузить код старой комнаты пользователя
 	old_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода существующей комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить существующую комнату из базы данных
 	var old_room *models.Room
 	old_room, err = b.rep.GetRoom(old_room_code)
 	if err != nil {
@@ -215,9 +231,13 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Скорректировать ник хоста, а также сбросить время создания на текущее время
+	// и сбросить флаг предупреждения о том что комната создана слишком давно
 	old_room.Hoster = hoster
 	old_room.Time = time.Now()
 	old_room.Warning = false
+
+	// Сохранить скорректированный ник хоста в статус пользователя
 	err = b.rep.SaveUserStatus(message.Chat.ID, "host_name", hoster)
 	if err != nil {
 		slog.Warn("Ошибка сохранения в БД данных о новом нике хоста")
@@ -241,6 +261,7 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 		slog.Error("Ошибка чтения из БД данных о хостере")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+	// Если модель хостера не найдена, то создать новую
 	if host == nil {
 		host = &models.Hoster{
 			ID:        message.Chat.ID,
@@ -267,6 +288,7 @@ func (b *Telegram) changeHoster(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Функция изменения описания комнаты, новое описание в сообщении message.Text
 func (b *Telegram) changeDescription(message *tgbotapi.Message, mode string) error {
 	const path = "service.telegram.edit.changeDescription"
 
@@ -279,13 +301,14 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message, mode string) err
 		return models.ErrInvalidName
 	}
 
-	// Загрузить старую комнату из базы данных
+	// Загрузить код существующей комнаты пользователя
 	old_room_code, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД кода существующей комнаты")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Загрузить существующую комнату из базы данных
 	var old_room *models.Room
 	old_room, err = b.rep.GetRoom(old_room_code)
 	if err != nil {
@@ -293,6 +316,8 @@ func (b *Telegram) changeDescription(message *tgbotapi.Message, mode string) err
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
+	// Скорректировать описание, а также сбросить время создания на текущее время
+	// и сбросить флаг предупреждения о том что комната создана слишком давно
 	old_room.Mode = mode
 	old_room.Time = time.Now()
 	old_room.Warning = false

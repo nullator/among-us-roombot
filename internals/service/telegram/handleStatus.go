@@ -10,11 +10,14 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Функция вызывается при получении от пользователя сообщения с учётом его статуса
 func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 	slog.Debug("Получен статус", slog.String("status", status))
 
 	switch status {
+	// Получено сообщение с обратной связью пользователя
 	case "wait_feedback":
+
 		err := b.feedback(update)
 		if err != nil {
 			slog.Error("Ошибка обработки обратной связи",
@@ -26,12 +29,20 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				slog.Error("Ошибка отправки сообщения",
 					slog.String("error", err.Error()))
 			}
+
+			err = b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
+			if err != nil {
+				slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
+					slog.String("error", err.Error()))
+			}
 		}
 
+	// Получено сообщение с кодом комнаты
 	case "edit_code":
 		err := b.changeCode(update.Message)
 		if err != nil {
 			switch err {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			case models.ErrInvalidCode:
 				msg_text := "Неверный код комнаты.\n" +
 					"Код комнаты должен состоять из 6 латинских букв, " +
@@ -70,12 +81,16 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 					slog.String("error", err.Error()))
 			}
 		}
+
+		// Обнуляем статус пользователя
 		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
+	// Получено сообщение с названием карты
 	case "change_map":
 		mapa := update.Message.Text
 		err := b.changeMap(update.Message, mapa)
 		if err != nil {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинное название карты.\n"+
@@ -105,11 +120,15 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 					slog.String("error", err.Error()))
 			}
 		}
+
+		// Обнуляем статус пользователя
 		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
+	// Получено сообщение с новым ником хостера
 	case "change_hoster":
 		err := b.changeHoster(update.Message)
 		if err != nil {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			if err == models.ErrInvalidName {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинный ник.\n"+
@@ -140,12 +159,15 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 		}
 
+		// Обнуляем статус пользователя
 		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
+	// Получено сообщение с новым режимом игры
 	case "change_description":
 		mode := update.Message.Text
 		err := b.changeDescription(update.Message, mode)
 		if err != nil {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			if err == models.ErrInvalidName {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинное название режима.\n"+
@@ -175,12 +197,16 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 					slog.String("error", err.Error()))
 			}
 		}
+
+		// Обнуляем статус пользователя
 		b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 
+	// Получено сообщение кодом создаваемой комнаты
 	case "start_add_room":
 		err := b.addDraftRoom(update.Message)
 		if err != nil {
 			switch err {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			case models.ErrInvalidCode:
 				msg_text := "Неверный код комнаты.\n" +
 					"Код комнаты должен состоять из 6 латинских букв, " +
@@ -211,14 +237,19 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 					slog.Error("error send message to user")
 				}
 			}
+			// Обнуляем статус пользователя
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 		} else {
+			// Если черновик комнаты успешно создан, то следующим шагом является ввод ника хостера
+			// Проверяем, есть ли у пользователя старый ник хостера
 			old_host_name, err := b.rep.GetUserStatus(update.Message.Chat.ID, "host_name")
 			if err != nil {
 				slog.Error("Ошибка чтения из БД данных о старом нике хостера",
 					slog.String("error", err.Error()))
 				old_host_name = ""
 			}
+
+			// Если старый ник есть, то предлагаем пользователю создать комнату со старым ником
 			if old_host_name != "" {
 				msg_text := fmt.Sprintf("Привет, %s!\nЧтобы создать руму со своим "+
 					"предыдущим ником, нажми на соответствующую кнопку, "+
@@ -237,6 +268,7 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 						slog.String("error", err.Error()))
 				}
 
+				// Если старого ника нет, то предлагаем пользователю придумать новый ник
 			} else {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Успешно создан черновик комнаты\n"+
@@ -249,13 +281,16 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				}
 			}
 
+			// Сохраняем статус пользователя на "wait_hostname"
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_hostname")
 		}
 
+	// Получено сообщение с ником хостера
 	case "wait_hostname":
 		name := update.Message.Text
 		err := b.addHostName(update.Message, name)
 		if err != nil {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			if err == models.ErrInvalidName {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинный ник.\n"+
@@ -265,6 +300,9 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				if err != nil {
 					slog.Error("error send message to user")
 				}
+
+				// TODO: Проверить, нужно ли обнулять статус пользователя, т.к. он
+				//  не меняется и уже был установлен на "wait_hostname"
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_hostname")
 			} else {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
@@ -278,6 +316,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 
 		} else {
+			// Если ник пользователя получен и сохранен в черновик комнаты, то следующим шагом
+			// является ввод названия карты. Создается клавиатура с названиями карт
 			kb := tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonData("🚀 Skeld", "skeld"),
@@ -301,13 +341,17 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				slog.Error("Ошибка отправки сообщения",
 					slog.String("error", err.Error()))
 			}
+
+			// Сохраняем статус пользователя на "wait_mapname"
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_mapname")
 		}
 
+	// Получено сообщение с названием карты
 	case "wait_mapname":
 		mapa := update.Message.Text
 		err := b.addMapName(update.Message, mapa)
 		if err != nil {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинное название карты\n"+
@@ -317,6 +361,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				if err != nil {
 					slog.Error("error send message to user")
 				}
+
+				// TODO: Проверить, нужно ли обнулять статус пользователя
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_mapname")
 			} else {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
@@ -330,6 +376,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 
 		} else {
+			// Если название карты пользователя получено и сохранено в черновик комнаты,
+			// то следующим шагом является ввод режима игры. Создается клавиатура с режимами игры
 			kb := tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
 					tgbotapi.NewInlineKeyboardButtonData("👨‍🎓 Классика", "classic"),
@@ -350,13 +398,17 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				slog.Error("Ошибка отправки сообщения",
 					slog.String("error", err.Error()))
 			}
+
+			// Сохраняем статус пользователя на "wait_gamemode"
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_gamemode")
 		}
 
+	// Получено сообщение с режимом игры
 	case "wait_gamemode":
 		mode := update.Message.Text
 		err := b.addGameMode(update.Message, mode)
 		if err != nil {
+			// Обрабатываются ожидаемые ошибки с указанием пользователю причины
 			if err == models.ErrInvalidMap {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 					"Слишком длинное название режима\n"+
@@ -366,6 +418,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 				if err != nil {
 					slog.Error("error send message to user")
 				}
+
+				// TODO: Проверить, нужно ли обнулять статус пользователя
 				b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "wait_gamemode")
 			} else {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID,
@@ -379,6 +433,8 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			}
 
 		} else {
+			// Выбор режима игры был последним шагом. Выводится сообщение об успешном
+			// создании комнаты с напоминанием о необходимости удаления неактуальных рум
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "*Комната успешно добавлена*\n\n"+
 				"Для того чтобы не засорять бота неактивными комнатами, "+
 				"не забудь её удалить когда закончишь играть")
@@ -392,8 +448,10 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 		}
 
+	// Получено сообщение, которое хостер хочет отправить своим подписчикам
 	case "wait_post":
 		post := update.Message.Text
+		// Проверка чтобы текст рассылки не был пустым
 		if post == "" {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 				"Текст рассылки не может быть пустым, попробуй ещё раз командой /notify")
@@ -407,6 +465,7 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			break
 		}
 
+		// Проверка чтобы текст рассылки не был слишком длинным
 		if len(post) > 1000 {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
 				"Пожалей своих подписчиков и не отправляй им текст Войны и мира, "+
@@ -421,6 +480,7 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 			break
 		}
 
+		// Запускается рассылка сообщения хостера в адрес его подписчиков
 		err := b.sendPost(update.Message, post)
 		if err != nil {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID,
@@ -476,7 +536,9 @@ func (b *Telegram) handleUserStatus(update *tgbotapi.Update, status string) {
 	}
 }
 
+// Функция перенаправляет полученное от пользователя сообщение разработчику
 func (b *Telegram) feedback(update *tgbotapi.Update) error {
+	// TelegramId разработчика
 	admin_id, err := strconv.ParseInt(os.Getenv("TG_adminID"), 10, 64)
 	if err != nil {
 		slog.Error("при выполнении авторизации не удалось распарсить ID в TelegramId",
@@ -484,6 +546,7 @@ func (b *Telegram) feedback(update *tgbotapi.Update) error {
 		return err
 	}
 
+	// Формируется новое сообщение для разработчика с текстом сообщения пользователя
 	msg_text := fmt.Sprintf("Получена обратная связь от %s содержания: %s",
 		update.Message.From.String(), update.Message.Text)
 	msg := tgbotapi.NewMessage(admin_id, msg_text)
@@ -494,6 +557,7 @@ func (b *Telegram) feedback(update *tgbotapi.Update) error {
 		return err
 	}
 
+	// Одновременно сообщение пользователя просто перенаправляется разработчику
 	forvard_msg := tgbotapi.NewForward(admin_id,
 		update.Message.Chat.ID,
 		update.Message.MessageID)
@@ -504,6 +568,7 @@ func (b *Telegram) feedback(update *tgbotapi.Update) error {
 		return err
 	}
 
+	// Отправляется сообщение пользователю о том, что его сообщение успешно отправлено
 	msg_text = "Спасибо, сообщение отправлено разработчику! " +
 		"При необходимости можно повторно ввести команду /feedback " +
 		"и отправить ещё одно сообщение"
@@ -516,6 +581,7 @@ func (b *Telegram) feedback(update *tgbotapi.Update) error {
 		return err
 	}
 
+	// Обнуляется статус пользователя
 	err = b.rep.SaveUserStatus(update.Message.Chat.ID, "status", "null")
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о статусе пользователя",

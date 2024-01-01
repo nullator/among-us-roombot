@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("error loading env: %v", err)
 	}
 
-	// setup logger
+	// setup logger (use slog)
 	err := os.MkdirAll("log", os.ModePerm)
 	if err != nil {
 		log.Fatalln(err)
@@ -46,6 +46,7 @@ func main() {
 	wrt := io.MultiWriter(os.Stdout, f)
 	l.SetOutput(wrt)
 
+	// setup slog
 	log, err := setupLogger(os.Getenv("ENV"))
 	if err != nil {
 		l.Fatal(err)
@@ -62,7 +63,7 @@ func main() {
 	}
 	bot.Debug = false
 
-	// open DB
+	// open DB (use bolt)
 	db, err := bolt.Open(os.Getenv("DB_FILE"), 0600, nil)
 	if err != nil {
 		l.Fatal(err.Error())
@@ -95,12 +96,14 @@ func setupLogger(env string) (*slog.Logger, error) {
 	var log *slog.Logger
 
 	switch env {
+	// для локальной разработки и отладки используется дефолтный json handler
 	case "local":
 		h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level:     slog.LevelDebug,
 			AddSource: false,
 		})
 		log = slog.New(h)
+	// для продакшена используется кастомный handler, который отправляет логи на сервер
 	case "prod":
 		h := logger.NewCustomSlogHandler(slog.NewJSONHandler(
 			os.Stdout, &slog.HandlerOptions{

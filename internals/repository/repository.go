@@ -34,6 +34,10 @@ func NewRepository(db base.Base) *Repository {
 	return &Repository{db: db}
 }
 
+// SaveUserStatus сохраняет статус пользователя в БД
+// id - telegram id пользователя
+// key - ключ по которому сохраняется статус (используется для отслеживания состояния пользователя)
+// value - значение статуса
 func (r *Repository) SaveUserStatus(id int64, key string, value string) error {
 	tg_id := fmt.Sprintf("%d", id)
 	err := r.db.Save(key, value, tg_id)
@@ -43,6 +47,8 @@ func (r *Repository) SaveUserStatus(id int64, key string, value string) error {
 
 }
 
+// GetUserStatus возвращает статус пользователя из БД
+// id - telegram id пользователя
 func (r *Repository) GetUserStatus(id int64, key string) (string, error) {
 	tg_id := fmt.Sprintf("%d", id)
 
@@ -54,6 +60,8 @@ func (r *Repository) GetUserStatus(id int64, key string) (string, error) {
 	return status, nil
 }
 
+// GetRoomList возвращает список комнат из БД
+// комнаты сохраняются в бакет "rooms"
 func (r *Repository) GetRoomList() ([]models.Room, error) {
 	data, err := r.db.GetAll("rooms")
 	if err != nil {
@@ -73,6 +81,8 @@ func (r *Repository) GetRoomList() ([]models.Room, error) {
 	return roomList, nil
 }
 
+// SaveRoom сохраняет комнату в БД
+// модель комнаты содержит код room.Code, по которому она сохраняется в БД
 func (r *Repository) SaveRoom(room *models.Room) error {
 	data, err := json.Marshal(room)
 	if err != nil {
@@ -82,6 +92,9 @@ func (r *Repository) SaveRoom(room *models.Room) error {
 	return r.db.SaveBytes(room.Code, data, "rooms")
 }
 
+// SaveDraftRoom сохраняет черновик комнаты в БД
+// черновик комнаты сохраняется в отдельный бакет "draft_rooms"
+// модель комнаты содержит код room.Code, по которому она сохраняется в БД
 func (r *Repository) SaveDraftRoom(room *models.Room) error {
 	data, err := json.Marshal(room)
 	if err != nil {
@@ -91,6 +104,8 @@ func (r *Repository) SaveDraftRoom(room *models.Room) error {
 	return r.db.SaveBytes(room.Code, data, "draft_rooms")
 }
 
+// GetRoom возвращает комнату из БД по ее коду
+// код - код из игры амонг
 func (r *Repository) GetRoom(code string) (*models.Room, error) {
 	data, err := r.db.GetBytes(code, "rooms")
 	if err != nil {
@@ -106,6 +121,7 @@ func (r *Repository) GetRoom(code string) (*models.Room, error) {
 	return &room, nil
 }
 
+// GetDraftRoom возвращает черновик комнаты из БД по ее коду
 func (r *Repository) GetDraftRoom(code string) (*models.Room, error) {
 	data, err := r.db.GetBytes(code, "draft_rooms")
 	if err != nil {
@@ -121,16 +137,22 @@ func (r *Repository) GetDraftRoom(code string) (*models.Room, error) {
 	return &room, nil
 }
 
+// DeleteRoom удаляет комнату из БД по ее коду
+// room - код из игры амонг
 func (r *Repository) DeleteRoom(room string) error {
 	err := r.db.Delete(room, "rooms")
 	return err
 }
 
+// DeleteDraftRoom удаляет черновик комнаты из БД по ее коду
+// room - код из игры амонг
 func (r *Repository) DeleteDraftRoom(room string) error {
 	err := r.db.Delete(room, "draft_rooms")
 	return err
 }
 
+// GetHostList возвращает список хостеров из БД
+// хостеры храняться в бакете "hosters"
 func (r *Repository) GetHostList() ([]models.Hoster, error) {
 	data, err := r.db.GetAll("hosters")
 	if err != nil {
@@ -150,6 +172,8 @@ func (r *Repository) GetHostList() ([]models.Hoster, error) {
 	return hosters, nil
 }
 
+// SaveHoster сохраняет хостера в БД
+// модель хостера содержит id hoster.ID, по которому он сохраняется в БД
 func (r *Repository) SaveHoster(hoster *models.Hoster) error {
 	id := fmt.Sprintf("%d", hoster.ID)
 
@@ -158,11 +182,10 @@ func (r *Repository) SaveHoster(hoster *models.Hoster) error {
 		return err
 	}
 
-	slog.Debug("Получена модель хостера для сохранения в БД", slog.Any("hoster", hoster))
-
 	return r.db.SaveBytes(id, data, "hosters")
 }
 
+// GetHoster возвращает хостера из БД по его telegram id
 func (r *Repository) GetHoster(id int64) (*models.Hoster, error) {
 	tg_id := fmt.Sprintf("%d", id)
 
@@ -172,8 +195,10 @@ func (r *Repository) GetHoster(id int64) (*models.Hoster, error) {
 	}
 
 	var hoster models.Hoster
+	// если хостер не найден в БД, то возвращается nil (не ошибка)
+	// это нужно для того, чтобы в случае отсутствия хостера в БД, создать нового
+	// значение nil обрабатывается в месте вызова функции
 	if data == nil {
-		slog.Debug("Хостер не найден в БД")
 		return nil, nil
 	} else {
 		err = json.Unmarshal(data, &hoster)
@@ -185,6 +210,7 @@ func (r *Repository) GetHoster(id int64) (*models.Hoster, error) {
 
 }
 
+// GetUser возвращает пользователя из БД по его telegram id
 func (r *Repository) GetUser(id int64) (*models.Follower, error) {
 	tg_id := fmt.Sprintf("%d", id)
 
@@ -192,11 +218,12 @@ func (r *Repository) GetUser(id int64) (*models.Follower, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Debug("Пользователь успешно загружен из БД", slog.Any("user", data))
 
 	var user models.Follower
+	// если пользователь не найден в БД, то возвращается nil (не ошибка)
+	// это нужно для того, чтобы в случае отсутствия пользователя в БД, создать нового
+	// значение nil обрабатывается в месте вызова функции
 	if data == nil {
-		slog.Debug("Пользователь не найден в БД")
 		return nil, nil
 	} else {
 		err = json.Unmarshal(data, &user)
@@ -208,6 +235,8 @@ func (r *Repository) GetUser(id int64) (*models.Follower, error) {
 
 }
 
+// SaveUser сохраняет пользователя в БД
+// модель пользователя содержит id user.ID, по которому он сохраняется в БД
 func (r *Repository) SaveUser(user *models.Follower) error {
 	id := fmt.Sprintf("%d", user.ID)
 

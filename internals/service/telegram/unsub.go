@@ -9,9 +9,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Обработчик команды /unsubscribe
 func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 	const path = "service.telegram.unsubscribe.handleUnsubscribe"
 
+	// Загрузка модели подписчика из БД
 	var user *models.Follower
 	user, err := b.rep.GetUser(message.Chat.ID)
 	if err != nil {
@@ -21,6 +23,8 @@ func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 			slog.String("path", path))
 	}
 
+	// Если пользователь не найден в БД (= не подписан ни на одного хостера) или его
+	// список подписок пуст, то выводим сообщение об этом и завершаем обработку
 	if user == nil || len(user.Hosters) == 0 {
 		msg := tgbotapi.NewMessage(message.Chat.ID, "Ты ни на кого не подписан\n"+
 			"Ты можешь подписаться на активных хостеров командой /subscribe")
@@ -33,6 +37,7 @@ func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Создается клавиатура со списком хостеров, на которых подписан пользователь
 	kb := make_unsubscribe_kb(b, user.Hosters)
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Нажми на кнопку "+
 		"с ником хостера, от которого хочешь отписаться:")
@@ -46,9 +51,11 @@ func (b *Telegram) handleUnsubscribe(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Функция спрашивает подтверждение на отписку от хостера
 func (b *Telegram) areYouShure(userID int64, hostID int64) error {
 	const path = "service.telegram.unsubscribe.areYouShure"
 
+	// Загрузка модели хостера из БД
 	host, err := b.rep.GetHoster(hostID)
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о хостере",
@@ -75,6 +82,7 @@ func (b *Telegram) areYouShure(userID int64, hostID int64) error {
 	return nil
 }
 
+// Функция отписывает пользователя от хостера
 func (b *Telegram) unsubscribe(userID int64, hostID int64) (string, error) {
 	const path = "service.telegram.subscribe.subscribe"
 
@@ -98,7 +106,9 @@ func (b *Telegram) unsubscribe(userID int64, hostID int64) (string, error) {
 
 	// Удаление хостера из модели подписчика
 	var userList models.UserList
+	// создается модель (список) хостеров из модели подписчика
 	userList.Users = user.Hosters
+	// ищется индекс хостера в модели подписчика
 	index := userList.FindUserIndexByID(userList.Users, hostID)
 	if index == -1 {
 		slog.Error("Хостер не найден в модели подписчика",
@@ -108,7 +118,9 @@ func (b *Telegram) unsubscribe(userID int64, hostID int64) (string, error) {
 		return "Ошибка удаления подписки (в БД не найдена запись о наличии подписки)",
 			fmt.Errorf("%s: %s", path, "хостер не найден в модели подписчика")
 	}
+	// удаляется хостер из списка хостеров
 	userList.Users = append(userList.Users[:index], userList.Users[index+1:]...)
+	// скорректирвоанный список возвращается в модель подписчика
 	user.Hosters = userList.Users
 	err = b.rep.SaveUser(user)
 	if err != nil {

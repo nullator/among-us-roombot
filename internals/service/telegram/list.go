@@ -10,30 +10,19 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Обработчик команды /list
 func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	const path = "service.telegram.list"
 	var rooms models.RoomList
 
+	// Получаем список комнат из БД
 	rooms, err := b.rep.GetRoomList()
 	if err != nil {
 		slog.Error("Ошибка получения списка комнат из БД")
 		return fmt.Errorf("%s: %w", path, err)
 	}
 
-	// rooms = append(rooms, models.Room{
-	// 	Code:   "AAAAAA",
-	// 	Hoster: "hoster1",
-	// 	Map:    "Skeld",
-	// 	Mode:   "Классика",
-	// })
-
-	// rooms = append(rooms, models.Room{
-	// 	Code:   "BBBBBB",
-	// 	Hoster: "hoster2",
-	// 	Map:    "Polus",
-	// 	Mode:   "Прятки",
-	// })
-
+	// Сортируем комнаты по времени создания
 	sort.Sort(rooms)
 
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
@@ -59,6 +48,8 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	indent := ""
 	var emoji_map, emoji_mode string
 	for _, room := range rooms {
+
+		// Для каждой комнаты определяем эмодзи для карты и режима
 		switch room.Map {
 		case "Skeld":
 			emoji_map = "🚀 "

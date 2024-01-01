@@ -9,6 +9,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Метод бота, который проверяет комнаты на время их создания для целей удаления старых комнат
 func (b *Telegram) Iterate() {
 	for {
 		err := b.checkRooms()
@@ -19,10 +20,12 @@ func (b *Telegram) Iterate() {
 	}
 }
 
+// Проверка комнат на время их создания
 func (b *Telegram) checkRooms() error {
 	const path = "service.telegram.iterator.checkRooms"
 	var rooms models.RoomList
 
+	// Получить список комнат из БД
 	rooms, err := b.rep.GetRoomList()
 	if err != nil {
 		slog.Error("Ошибка получения списка комнат из БД")
@@ -30,10 +33,11 @@ func (b *Telegram) checkRooms() error {
 	}
 
 	for _, room := range rooms {
-		// Проверка на предупреждения
+		// Проверка времени создания комнаты
 		if time.Now().After(room.Time.Add(time.Minute * 240)) {
 
-			// Отправить предупреждение
+			// Если комната создана давно и предупреждение пользователю не отправлено
+			// то ему отправляется предупреждение
 			if !room.Warning {
 				msgText := fmt.Sprintf("*Продлевать будете?*\n\n" +
 					"Твоя рума создана более 4 часов назад\\. " +
@@ -52,6 +56,7 @@ func (b *Telegram) checkRooms() error {
 				msg.ParseMode = "MarkdownV2"
 				_, err = b.bot.Send(msg)
 				if err != nil {
+					// Отдельно проверяется не успел ли хостер заблокировать бота
 					if err.Error() == "Forbidden: bot was blocked by the user" {
 						slog.Warn("Обнаружена блокировка бота")
 						err := b.rep.DeleteRoom(room.Code)
@@ -75,6 +80,8 @@ func (b *Telegram) checkRooms() error {
 						return fmt.Errorf("%s: %w", path, err)
 					}
 				}
+
+				// Флаг ставиться чтобы не направлять пользователю предупреждение повторно
 				room.Warning = true
 				err = b.rep.SaveRoom(&room)
 				slog.Info("Пользователю отправлено предупреждение",
@@ -123,6 +130,7 @@ func (b *Telegram) checkRooms() error {
 	return nil
 }
 
+// Функция продлевает время жизни комнаты обновляя время её создания и сбрасывая флаг предупреждения
 func (b *Telegram) addTime(message *tgbotapi.Message) error {
 	const path = "service.telegram.iterator.addTime"
 

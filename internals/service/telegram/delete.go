@@ -10,10 +10,16 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Обработка команды /del
 func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 	const path = "service.telegram.delete.handleDel"
 
+	// У моманды 2 режима работы: чтение кода из аргументов сообщения или удаление через диалог
 	arg := message.CommandArguments()
+
+	// Если аргументы есть, то пытаемся удалить комнату, проверяя корректность аргумента
+	// Удалять комнату с аргументами может только администратор,
+	// поэтому проверяем наличие администратора в списке администраторов
 	if arg != "" {
 		match, _ := regexp.MatchString("^[a-zA-Z]{6}$", arg)
 		if !match {
@@ -21,6 +27,7 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		}
 		code := strings.ToUpper(arg)
 
+		// Загрузка администраторов из переменной окружения и проверка наличия прав администратора
 		admin_list := os.Getenv("ADMINS")
 		admins := strings.Split(admin_list, ",")
 		if b.isAdmin(admins, fmt.Sprint(message.Chat.ID)) {
@@ -52,6 +59,8 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		}
 	}
 
+	// Если аргументов нет, то пытаемся удалить комнату через диалог
+	// Проверяем наличие созданной комнаты у пользователя
 	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
@@ -73,6 +82,9 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 		return nil
 	}
 
+	// Если комната есть, то запускаем диалог удаления
+	// Создается кнопка с кодом удаляемой комнаты и кнопка отмены
+	// В дальнейшем при нажалии на кнопку "delete" запускается удаление комнаты
 	caption := fmt.Sprintf("Удалить %s", exist_room)
 	var kb = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -97,15 +109,18 @@ func (b *Telegram) handleDel(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Функция удаления комнаты после нажатия на кнопку "delete"
 func (b *Telegram) delete(message *tgbotapi.Message) error {
 	const path = "service.telegram.delete.delete"
 
-	// Удалить из базы данных
+	// Получить из базы код существующей комнаты пользователя
 	exist_room, err := b.rep.GetUserStatus(message.Chat.ID, "room")
 	if err != nil {
 		slog.Error("Ошибка чтения из БД данных о созданной пользователем комнате")
 		return fmt.Errorf("%s: %w", path, err)
 	}
+
+	// Удалить комнату из базы
 	err = b.rep.DeleteRoom(exist_room)
 	if err != nil {
 		slog.Error("Ошибка удаления комнаты из БД")
@@ -114,7 +129,7 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 	slog.Info("Комната удалена из БД",
 		slog.String("room", exist_room))
 
-	// Обновить статус
+	// Оннулить статус пользователя о наличии существующей комнаты
 	err = b.rep.SaveUserStatus(message.Chat.ID, "room", "")
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о созданной пользователем комнате")
@@ -137,6 +152,8 @@ func (b *Telegram) delete(message *tgbotapi.Message) error {
 	return nil
 }
 
+// Функция проверки наличия пользователя в списке администраторов
+// id - telegram id пользователя
 func (b *Telegram) isAdmin(list []string, id string) bool {
 	for _, v := range list {
 		if v == id {

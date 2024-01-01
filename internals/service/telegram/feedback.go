@@ -7,9 +7,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Обработка команды /feedback
 func (b *Telegram) handleFeedback(message *tgbotapi.Message) error {
 	const path = "service.telegram.feedback"
 
+	// Сохраняем статус пользователя на "wait_feedback"
 	err := b.rep.SaveUserStatus(message.Chat.ID, "status", "wait_feedback")
 	if err != nil {
 		slog.Error("Ошибка сохранения в БД данных о статусе пользователя",
