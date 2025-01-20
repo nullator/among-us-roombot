@@ -10,7 +10,7 @@ import (
 // Функция создает клавиатуру с кнопками для подписки на хостеров. Проверяется четность количества хостеров для корректного формирования кнопок
 // TODO: зачем передавать в функцию id_chat? Наверное раньше использовалось, но сейчас не актуально
 func make_subscribe_kb(
-	b *Telegram, id_chat int64,
+	_ *Telegram, _ int64,
 	rooms []models.Room) tgbotapi.InlineKeyboardMarkup {
 
 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
@@ -42,7 +42,7 @@ func make_subscribe_kb(
 }
 
 // Функция создает клавиатуру с кнопками для отписки от хостеров. Проверяется четность количества хостеров для корректного формирования кнопок
-func make_unsubscribe_kb(b *Telegram, hosters []models.User) tgbotapi.InlineKeyboardMarkup {
+func make_unsubscribe_kb(_ *Telegram, hosters []models.User) tgbotapi.InlineKeyboardMarkup {
 
 	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup()
 	i := 0

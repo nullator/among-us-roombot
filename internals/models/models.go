@@ -38,3 +38,7 @@ type Follower struct {
 type UserList struct {
 	Users []User `json:"users"`
 }
+
+type UserRequestTimestamps struct {
+	Timestamps []time.Time `json:"timestamps"`
+}

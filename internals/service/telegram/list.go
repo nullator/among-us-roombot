@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"sort"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -28,11 +29,26 @@ func (b *Telegram) handleList(message *tgbotapi.Message) error {
 	msgText := "*Румы, где ты можешь поиграть:*\n\n"
 
 	if len(rooms) == 0 {
+		last, err := b.rep.GetAndUpdateUserRequestTimestamp(message.Chat.ID)
+		if err != nil {
+			slog.Error("Ошибка получения времени последнего запроса пользователя")
+			last = time.Now().Add(-24 * time.Hour)
+		}
+		// Если прошло менее 20 секунд
+		if time.Since(last) < 20*time.Second {
+			err = sendImage(b, message.Chat.ID, "sad.png")
+			if err != nil {
+				slog.Warn("Не удалось отправить картинку")
+				return fmt.Errorf("%s: %w", path, err)
+			}
+			slog.Info("Отправлен хомяк")
+		}
+
 		msgText = "Пока нет ни одной румы 😔\nСоздай свою командой /add"
 		msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 		msg.ParseMode = "MarkdownV2"
 		msg.ReplyMarkup = list_kb
-		_, err := b.bot.Send(msg)
+		_, err = b.bot.Send(msg)
 		if err != nil {
 			slog.Error("error send message to user")
 			return fmt.Errorf("%s: %w", path, err)

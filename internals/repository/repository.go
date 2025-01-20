@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
+
+	"github.com/boltdb/bolt"
 )
 
 type Repository struct {
@@ -26,6 +29,7 @@ type RepositoryInterface interface {
 	SaveHoster(*models.Hoster) error
 	GetUser(int64) (*models.Follower, error)
 	SaveUser(*models.Follower) error
+	GetAndUpdateUserRequestTimestamp(id int64) (time.Time, error)
 }
 
 var _ RepositoryInterface = (*Repository)(nil)
@@ -246,4 +250,54 @@ func (r *Repository) SaveUser(user *models.Follower) error {
 	}
 
 	return r.db.SaveBytes(id, data, "users")
+}
+
+// UserRequestTimestamps хранит временные отметки запросов пользователя, возвращает время 3-го по счету запроса
+func (r *Repository) GetAndUpdateUserRequestTimestamp(id int64) (time.Time, error) {
+	tg_id := fmt.Sprintf("%d", id)
+	var timestamps models.UserRequestTimestamps
+
+	// Получаем текущие временные отметки из базы данных
+	data, err := r.db.GetBytes("request_timestamps", tg_id)
+	if err != nil && err != bolt.ErrBucketNotFound {
+		return time.Time{}, err
+	}
+
+	if data != nil {
+		err = json.Unmarshal(data, &timestamps)
+		if err != nil {
+			return time.Time{}, err
+		}
+	}
+
+	// Если временных отметок нет, возвращаем временную отметку 24 часа назад
+	var lastTimestamp time.Time
+	if len(timestamps.Timestamps) == 0 {
+		lastTimestamp = time.Now().Add(-24 * time.Hour)
+	} else if len(timestamps.Timestamps) < 3 {
+		lastTimestamp = time.Now().Add(-24 * time.Hour)
+	} else {
+		lastTimestamp = timestamps.Timestamps[len(timestamps.Timestamps)-1]
+	}
+
+	// Добавляем текущую временную отметку
+	timestamps.Timestamps = append(timestamps.Timestamps, time.Now())
+
+	// Оставляем только последние три временные отметки
+	if len(timestamps.Timestamps) > 3 {
+		timestamps.Timestamps = timestamps.Timestamps[len(timestamps.Timestamps)-3:]
+	}
+
+	// Сохраняем обновленные временные отметки в базу данных
+	data, err = json.Marshal(timestamps)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	err = r.db.SaveBytes("request_timestamps", data, tg_id)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return lastTimestamp, nil
 }

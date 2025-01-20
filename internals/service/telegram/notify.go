@@ -61,12 +61,12 @@ func (b *Telegram) handleNotify(message *tgbotapi.Message) error {
 		return nil
 	}
 
-	// Проверка времени предыдущей рассылки, запрещено направлять рассылку чаще чем раз в 6 часов
+	// Проверка времени предыдущей рассылки, запрещено направлять рассылку чаще чем раз в 10 минут
 	delta := time.Now().Unix() - host.LastSend.Unix()
-	if delta < (60 * 60 * 6) {
+	if delta < (10 * 60) {
 		t := time.Unix((60*60*6)-delta, 0)
 		t_str := fmt.Sprintf("%02d:%02d:%02d", t.Hour(), t.Minute(), t.Second())
-		msg_text := fmt.Sprintf("Рассылку можно отправлять не чаще чем раз в 6 часов, "+
+		msg_text := fmt.Sprintf("Рассылку можно отправлять не чаще чем раз в 10 минут, "+
 			"следующая рассылка возможна через %s", t_str)
 		msg := tgbotapi.NewMessage(message.Chat.ID, msg_text)
 		msg.ReplyMarkup = list_kb
@@ -245,7 +245,7 @@ func (b *Telegram) notify(followers []models.User, hostID int64, post string) {
 			}
 		}
 		// Задержка между отправкой сообщений для избежания блокировки бота
-		time.Sleep(time.Millisecond * 300)
+		time.Sleep(time.Millisecond * 500)
 	}
 }
 
